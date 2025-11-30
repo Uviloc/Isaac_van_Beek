@@ -1,0 +1,333 @@
+:root {
+  /* rotation angle (used by transform and the sin() calculations) */
+  --angle: 10deg;
+  --contentSize: 40%;
+}
+
+/* Typography / section paragraph */
+.project-section p {
+  color: #e9e9e9;
+  font-size: 16px;
+  margin: 0;
+  overflow-y: auto;
+  scrollbar-color: #989898 #00000000;
+}
+
+.project-section ul {
+  color: #e9e9e9;
+  font-size: 16px;
+  margin: 0;
+}
+
+.project-section a {
+  color: #e9e9e9;
+  font-size: 16px;
+}
+
+
+.project-section h2 {
+  text-align: center;
+  margin: 0 0 10px 0;
+  color: #fcfcfc;
+}
+
+/* clear floats for sections and header */
+.project-section::after,
+.project-header::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* base page layout */
+body {
+  background: #222;
+  color: #111;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+/* container rotated layout */
+.project-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  --angle: 10deg;
+  width: calc(100vw + 100vh * sin(var(--angle)));
+  height: calc(100vh + 100vw * sin(var(--angle)));
+  transform: translate(-50%, -50%) rotate(var(--angle));
+  transform-origin: center center;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-top: calc(8vh + 6vw);
+  padding-bottom: calc(8vh + 6vw);
+}
+
+.back-button {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 5vw;
+  height: 5vw;
+  font-size: 50px;
+  z-index: 1;
+}
+.back-button > a > img { width: 100%; height: 100%; }
+
+.container-backdrop {
+  position: absolute;
+  top: -100vh;
+  bottom: -100vh;
+  left: 50%;
+  width: 70%;
+  transform: translateX(-50%) rotate(var(--angle));
+  transform-origin: center center;
+  background: var(--accent-color, #f4a03b);
+  z-index: 0;
+}
+
+.project-header {
+  rotate: calc(var(--angle) * -1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 32px 24px;
+  background: none;
+  border-bottom: none;
+}
+.project-title {
+  margin: 0 0 12px 0;
+  font-size: 2.2rem;
+  color: #fff;
+  letter-spacing: 1px;
+  text-align: center;
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+
+/* Project header tags: match main page tag-buttons (square icon by default, text overlays on hover) */
+.project-tags { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+
+.project-tag {
+    display: inline-block;
+    position: relative;
+    width: 75px;               /* match styles.css tag size */
+    height: 75px;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    border-radius: 15px;
+    background: #eee;
+    color: #fff;
+    vertical-align: middle;
+    overflow: hidden;
+    transition: background .18s ease, transform .12s ease;
+    text-align: center;
+}
+
+/* hover/focus background */
+.project-tag:focus, .project-tag:hover {
+    background: #444;
+    outline: none;
+}
+
+/* Icon centered inside box (same behaviour as main page) */
+.project-tag .tag-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 65px;
+    height: 65px;
+    max-width: 65px;
+    max-height: 65px;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    transition: opacity .18s ease, transform .18s ease;
+    display: block;
+}
+
+/* stacking for project tags so text appears above icon */
+.project-tag .tag-icon { z-index: 1; }
+.project-tag .tag-text { z-index: 2; }
+
+/* keep icon visible but blurred/faded behind text on hover/focus */
+.project-tag:hover .tag-icon,
+.project-tag:focus .tag-icon {
+    opacity: 0.28;
+    filter: blur(3px) saturate(.85);
+    transform: translate(-50%, -50%) scale(.98);
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease;
+}
+
+/* Text overlays the icon, centered. Hidden by default. */
+.project-tag .tag-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateY(4px);
+    opacity: 0;
+    transition: opacity .18s ease, transform .18s ease;
+    color: inherit;
+    font-size: 14px;
+}
+
+.tag-button .tag-icon,
+.item-tag .tag-icon {
+  z-index: 1;
+}
+.tag-button .tag-text,
+.item-tag .tag-text {
+  z-index: 2;
+}
+
+/* hover: keep icon visible but blurred / faded behind the text */
+.tag-button:hover .tag-icon,
+.tag-button:focus .tag-icon,
+.item-tag:hover .tag-icon,
+.item-tag:focus .tag-icon {
+    opacity: 0.8;                       /* reduced opacity */
+    filter: blur(2px) saturate(.1);    /* blur + slightly desaturate */
+    transform: translate(-50%, -50%) scale(.98);
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease;
+}
+
+
+/* on hover/focus show text and fade icon */
+.project-tag:hover .tag-text,
+.project-tag:focus .tag-text {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+/* end project tag block */
+.project-description { color: #fff; text-align: center; margin-bottom: 18px; font-size: 1.1rem; opacity: 0.92; }
+
+/* sections */
+.project-sections {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 70px;
+  padding: 0;
+}
+.project-section {
+  height: 70vh;
+  width: 45vw;
+  rotate: calc(var(--angle) * -1);
+  background: #3d1e3c;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  margin: 0 auto;
+  padding: 16px;
+  display: block;
+  text-align: left;
+  position: relative;
+}
+
+/* ensure flex children can shrink so overflow:auto works */
+.project-section,
+.media-row,
+.media-area {
+  min-height: 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* media-area base */
+.media-area {
+  height: 93%;
+  width: 100%;
+  padding: 8px 0;
+  box-sizing: border-box;
+  perspective: 900px; /* provides depth for children */
+}
+.media { display: block; object-fit: cover; max-width: 100%; }
+
+/* flex-based layouts: top/bottom/left/right -> image height:100% and paragraph scroll */
+.media-area.top, .media-area.bottom { display: flex; flex-direction: column; gap: 12px; }
+.media-area.left, .media-area.right { display: flex; gap: 16px; align-items: stretch; }
+
+/* media sizing in flex contexts
+   - left/right now use the custom property as the flex-basis so inline
+     style="--mediaWidth:10%" on .media-area will control the media size.
+   - top/bottom media height can also be customized via --mediaHeight (optional).
+*/
+.media-area.top .media,
+.media-area.bottom .media {
+  width: 100%;
+  height: var(--contentSize);
+}
+
+.media-area.left .media,
+.media-area.right .media {
+  flex: 0 0 var(--contentSize);
+  width: var(--contentSize);
+  height: 100%;
+}
+
+/* paragraphs inside flex areas get inner scrolling */
+.media-area.top p, .media-area.bottom p, .media-area.left p, .media-area.right p {
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0;
+  min-width: 0;
+}
+
+/* corner float layouts: topLeft/topRight float so text flows around image (no scroll) */
+.media-area.topLeft, .media-area.topRight, .media-area.bottomLeft, .media-area.bottomRight {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-color: #989898 #00000000;
+  display: block;
+  position: relative;
+}
+.media-area.topLeft .media { float: left; width: var(--contentSize); height: auto; margin: 0 6px 6px 0; }
+.media-area.topRight .media { float: right; width: var(--contentSize); height: auto; margin: 0 0 6px 6px; }
+.media-area.bottomLeft .media { float: left; width: var(--contentSize); height: auto; margin: 6px 6px 0 0; }
+.media-area.bottomRight .media { float: right; width: var(--contentSize); height: auto; margin: 6px 0 0 6px; }
+
+/* corner paragraphs should not scroll */
+.media-area.topLeft p, .media-area.topRight p, .media-area.bottomLeft p, .media-area.bottomRight p {
+  overflow-y: visible;
+  margin: 0;
+}
+
+/* clear floats inside media-area */
+.media-area::after { content: ""; display: table; clear: both; }
+
+
+/* Responsive: collapse floats/flex into stacked flow on small screens */
+@media (max-width: 900px) {
+  .media-area.top,.media-area.bottom,.media-area.left,.media-area.right,
+  .media-area.topLeft,.media-area.topRight,.media-area.bottomLeft,.media-area.bottomRight {
+    display: block;
+  }
+  img.left,img.right,img.topLeft,img.topRight,img.bottomLeft,img.bottomRight,
+  video.left,video.right,video.topLeft,video.topRight,video.bottomLeft,video.bottomRight {
+    float: none;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 16px 0;
+  }
+  .media-area .media { width: 100%; height: auto; float: none; margin: 0 0 12px 0; }
+  .media-area p { overflow-y: visible; }
+  .project-container { max-width: 99vw; }
+  .project-section { width: 95%; }
+}
+
+/* Very narrow screens */
+@media (max-width: 600px) {
+  .project-container { padding: 18px 0; }
+  .project-section { padding: 18px 8px; }
+  .project-section h2 { font-size: 1rem; }
+  .gallery img { width: 100px; height: 70px; }
+}
+
+/* ensure videos get same sizing/cropping behavior as images and a neutral background when cropped */
+video.media { display: block; object-fit: cover; background: #000; }

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Metadata extracted by the homepage -->
+    <meta name="title" content="Witchraft">
+    <meta name="thumbnail" content="projects/Witchraft/media/Foliage Image.png">
+    <meta name="description" content="
+    A multiplayer game about witches racing on hovercrafts through a swamp.
+    This was my first experience with the Unreal engine with a project lasting 10 weeks in a team of 8 where I had not worked with any of its members before.
+    
+    The project was over the period of 4 months, so read about my experience and
+    the various lessons I had to learn.
+    ">
+    <meta name="tags" content="Level Design,Unreal,Procedural">
+    <meta name="color" content="#03a24d">
+
+    <title>Witchraft</title>
+
+    <link rel="stylesheet" href="../projectStyles.css">
+</head>
+<body class="project-page">
+
+  <div class="container-backdrop" aria-hidden="true"></div>
+  <div class="back-button">
+    <a href="/index.html">
+      <img src="/media/back.png">
+    </a>
+  </div>
+  <div class="project-container">
+    <header class="project-header">
+      <h1 class="project-title"></h1>
+      <div class="project-tags">
+      </div>
+    </header>
+    <main class="project-sections">
+      <!--
+      Position classes:
+      Media element BEFORE Text element:  left, top, bottom, topLeft, topRight
+      Media element AFTER Text element:   right, bottom
+      Change size of content:             style="--contentSize: 60%"
+
+      Section:
+      <section class="project-section">
+        <h2>???</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p></p>
+        </div>
+      </section>
+
+      Video:
+      <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+        <source src="media/???.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+
+      Image:
+      <img class="media" src="media/???.png" alt="">
+      -->
+
+
+
+      <section class="project-section">
+        <h2>Process explanation</h2>
+        <div class="media-area">
+          <p>
+            A multiplayer game about witches racing on hovercrafts through a swamp.<br>
+            This was my first experience with the Unreal engine with a project lasting 10 weeks in a team of 8 where I had not worked with any of its members before.<br>
+            <br>
+            Game page:<br>
+            <a href="https://uviloc.itch.io/witchraft">Witchraft Itch.io</a><br>
+            <br>
+            Witchraft was a joint project made during a course at Creative Media &amp; Game Technologies. Made in a group of 8 (2 designers, 4 artist, 2 engineers),
+            the project was made in Unreal Engine 5.2.<br>
+            This was my first experience with Unreal, so there were many unforeseen problems that I encountered. The project spanned a total of 10 weeks and only
+            a couple of people had experience in Unreal. In the end I would not recommend doing this project in Unreal if it wasn&#39;t for all the experience
+            I learned along the way.<br>
+            The project was our first time working with and for a client. However we did not really notice much of a difference in the way we approached to project.
+            Since despite a lot of trying we were often ignored or given very little feedback by our client.<br>
+            <br>
+            As is with many group projects there were a lot of issues. Some caused by miscommunication, others caused by simple inexperience in the engine.
+            Such as all the issues that came along with using Git for Unreal.<br>
+            This caused a lot of delays and we ended up having to scrap certain parts of the original concept. For instance,
+            there was a plan to have the buildings explode on impact.<br>
+            However the Chaos System (from Unreal) was having too many issues and we decided it to not
+            be worth solving the numerous issues.
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Gameplay</h2>
+        <div class="media-area top" style="--contentSize: 95%">
+            <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+              <source src="media/Witchraft Gameplay.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Procedural Foliage in Unreal</h2>
+        <div class="media-area bottom" style="--contentSize: 89%">
+          <p>
+            I was personally responsible for the designing and building of the level.<br>
+            I used the procedural generator offered by Unreal to plant the vegetation.
+          </p>
+          <img class="media" src="media/Foliage Image.png" alt="Procedural Foliage in Unreal">
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Level Design</h2>
+        <div class="media-area bottom">
+          <img class="media" src="media/Witchraft Map.png" alt="Planned map for game" style="--contentSize: 61%">
+          <p>
+            At first the idea was to create more of a closed loop with a couple of branches. The idea that many in our group wanted was to have it almost be a maze.<br>
+            I personally do not like confusion as a game aspect, but I do like chaos as a game aspect.<br>
+            However during the first testing phase we quickly realized that this was just too much for the players to keep track of.<br>
+            So I simplified the map significantly by having a straight path without incorrect choices.<br>
+            This, during playtesting, worked much better in terms of guiding the player to the finish.
+          </p>
+          <img class="media" src="media/Full Map.png" alt="Final map layout of game" style="--contentSize: 10%">
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Volumetric Fog</h2>
+        <div class="media-area top" style="--contentSize: 81%">
+          <video class="media" preload="metadata" playsinline autoplay muted loop>
+            <source src="media/Fog animation.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <p>
+            In the end I learned a lot about Unreal. Mostly in terms of the level editor, but I also made a volumetric fog texture with the materials.<br>
+            I used Substance Designer textures with its respective plugin and I also fixed some bugs in the blueprints, that the engineers didn't have the time for.
+          </p>
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Reflection</h2>
+        <div class="media-area">
+          <p>
+            An interesting aspect about me is that I do have experience in both designing, coding and a bunch in between.<br>
+            I only code mostly as a hobby so I would not be able to replace an actual engineer.<br>
+            I don&#39;t have experience in art, but I do always try to understand how things work in their field.<br>
+            Because of this I am able to give another view and am able to brainstorm with a lot of people in different fields.<br>
+            I often find solutions and the reasons behind bugs, that the engineers haven&#39;t been able to solve.<br>
+            Like the fact that player 2 would disappear when player 1 moved too far.<br>
+            I immediately though it could be related to the world partitioning we had in place. And low and behold, it was.<br>
+            <br>
+            I was also appointed the project leader. This is not something too new to me, as I often end up leading all the projects in my study.
+            I generally have a good and quick grasp on how people work and what they are good with.<br>
+            And although I have many parts to improve in I always try to resolve problems in the group by looking at the situation from an objective perspective.<br>
+            <br>
+            This project was quite difficult for me in this role however.<br>
+            This was due to me only knowing 2 of the members, while I never worked with any of them.<br>
+            So it was hard to keep the entire group together as many members were getting irritated with the project, the client and others.<br>
+            It certainly did not help that some of the members were only complaining and borderline insulting others.<br>
+            Looking back I really should have stopped this behavior from happening, as it would have improved the overall mood in the end.<br>
+            <br>
+            I spend by far the most hours into this project. Mostly due to me working on a lot of the various tasks that nobody else really took up.<br>
+            Like testing, communication with the client, prototyping and creating the presentations. Although that last one I liked to do anyways.<br>
+            Since I have a bunch of experience in PowerPoint, I often go a bit of an extra mile on the presentations, which is why
+            I created almost all presentations during my study.
+          </p>
+        </div>
+      </section>
+
+
+
+
+
+
+
+
+
+
+
+    </main>
+  </div>
+  <script src="../projectsScript.js"></script>
+</body>
+</html>

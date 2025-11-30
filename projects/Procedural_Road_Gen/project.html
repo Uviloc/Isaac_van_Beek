@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Metadata extracted by the homepage -->
+    <meta name="title" content="Procedural Road Generator">
+    <meta name="thumbnail" content="projects/Procedural_Road_Gen/media/Thumbnail.png">
+    <meta name="description" content="
+    Continuing on my journey with making procedural generation tools, I made a road generator.
+    Utilizing editor lines and many new techniques I set out to create a usefull tool for designers wanting to create a city.
+    Read all about how I was able to make this tool.
+    ">
+    <meta name="tags" content="Procedural,UI/UX,Unity,C#">
+    <meta name="color" content="#750fd4">
+
+    <title>Procedural Road Generator</title>
+
+    <link rel="stylesheet" href="../projectStyles.css">
+</head>
+<body class="project-page">
+
+  <div class="container-backdrop" aria-hidden="true"></div>
+  <div class="back-button">
+    <a href="/index.html">
+      <img src="/media/back.png">
+    </a>
+  </div>
+  <div class="project-container">
+    <header class="project-header">
+      <h1 class="project-title"></h1>
+      <div class="project-tags">
+      </div>
+    </header>
+    <main class="project-sections">
+      <!--
+      Position classes:
+      Media element BEFORE Text element:  left, top, bottom, topLeft, topRight
+      Media element AFTER Text element:   right, bottom
+      Change size of content:             style="--contentSize: 60%"
+
+      Section:
+      <section class="project-section">
+        <h2>???</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p></p>
+        </div>
+      </section>
+
+      Video:
+      <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+        <source src="media/???.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+
+      Image:
+      <img class="media" src="media/???.png" alt="">
+      -->
+
+
+
+      <section class="project-section">
+        <h2>The project</h2>
+        <div class="media-area topLeft" style="--contentSize: 30%">
+          <p>Download Project Here:</p>
+          <a href="https://drive.google.com/file/d/1cfU8aILNdFrCcyT29Td-NiJlqK4huw-f/view?usp=sharing">
+            
+            <img class="media" src="/media/Download.png" alt="download file">
+          </a>
+          <p>
+            <br>
+            <br>
+            I recently made a procedural road generator for Unity. I utilized new techniques like the way I show the roads to the user by use of the lines.<br>
+            These lines are an editor only visual to minimize the performance hit.<br>
+            I have provided the files to play with this yourself, however I have to add that this tool has not been perfected so some problems may occur.<br>
+            I initially planned to have the tool be a lot more extensive and be able to have various shapes (like urban).<br>
+            However, as I planned to only spend around 70 hours on this I had to scale back at an early stage.<br>
+            <br>
+          </p>
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Demo</h2>
+        <div class="media-area top" style="--contentSize: 90%">
+          <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+            <source src="media/Demo Video.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <p>
+            In this demo video only the main workflow of the tool is shown. Not all functionality can therefore be seen here.
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>The inspector UI</h2>
+        <div class="media-area right" style="--contentSize: 48%">
+          <p>
+            Inspector for the generator. This is made with a custom Editor class. Each variable has tooltips for further information.
+          </p>
+          <img class="media" src="media/Inspector.png" alt="Inspector for the tool">
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Example of generation</h2>
+        <div class="media-area bottom" style="--contentSize: 50%">
+          <p>
+            An example of how the road generator can be used:
+          </p>
+          <img class="media" src="media/Example Generation 1.png" alt="Example of generator in use">
+          <p>
+            The lines appear only when looking at the object. This example shows a more city sized road network.
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Example of generation</h2>
+        <div class="media-area top" style="--contentSize: 50%">
+          <img class="media" src="media/Example Generation 2.png" alt="Example of generator in use">
+          <p>
+            This example is similar to the previous, however in this one I added some house locations (the red blocks).<br>
+            These have been spawned with the procedural structure spawner I made. The roads automatically try to connect with the houses.
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Example of generation</h2>
+        <div class="media-area top" style="--contentSize: 60%">
+          <img class="media" src="media/Example Generation 3.png" alt="Example of generator in use">
+          <p>
+            This example shows a more sparse view. This could be used for a small village or a simple adventure map.
+          </p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="../projectsScript.js"></script>
+</body>
+</html>

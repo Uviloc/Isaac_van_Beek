@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Metadata extracted by the homepage -->
+    <meta name="title" content="Allus Internship">
+    <meta name="thumbnail" content="projects/Allus_Internship/media/Interface and Code.png">
+    <meta name="description" content="
+    For my first internship I worked at Allus Broadcast Facilities, a company focussing on the broadcasting of sport events.
+    
+    During my time there I was tasked with creating an interface that would trigger live graphics using the xPression API.
+    This led me to create a modular framework with a focus on reliability and beginner friendly.
+
+    Read more about how I went from a simple idea to a full program.
+    ">
+    <meta name="tags" content="UI/UX,C#,WinForms">
+    <meta name="color" content="#b79b00">
+
+    <title>Allus Internship</title>
+
+    <link rel="stylesheet" href="../projectStyles.css">
+</head>
+<body class="project-page">
+
+  <div class="container-backdrop" aria-hidden="true"></div>
+  <div class="back-button">
+    <a href="/index.html">
+      <img src="/media/back.png">
+    </a>
+  </div>
+  <div class="project-container">
+    <header class="project-header">
+      <h1 class="project-title"></h1>
+      <div class="project-tags">
+      </div>
+    </header>
+    <main class="project-sections">
+      <!--
+      Position classes:
+      Media element BEFORE Text element:  left, top, bottom, topLeft, topRight
+      Media element AFTER Text element:   right, bottom
+      Change size of content:             style="--contentSize: 60%"
+
+      Section:
+      <section class="project-section">
+        <h2>???</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p></p>
+        </div>
+      </section>
+
+      Video:
+      <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+        <source src="media/???.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+
+      Image:
+      <img class="media" src="media/???.png" alt="">
+      -->
+
+
+
+      <section class="project-section">
+        <h2>Creating an Interface</h2>
+        <div class="media-area bottom" style="--contentSize: 80%">
+          <p>
+            For my first internship I worked at Allus Broadcast Facilities, a company focussing on the broadcasting of sport events.<br>
+            During my time there I was tasked with creating an interface that would trigger live graphics using the xPression API.
+          </p>
+          <img class="media" src="media/Interface and Code.png" alt="Interface and its Code">
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>The previous Generation</h2>
+        <div class="media-area bottom" style="--contentSize: 70%">
+          <p>
+            I was given this task along side some code that they made before, their code was outdated and had some issues but also was not made with compatibility in mind. 
+            Therefore, each sport had their own interface.<br>
+            <br>
+            I first set out a design requirements document that would outline all the features and how each function would be coded.<br>
+            After having gotten approval from my company coach I set out to build the framework.
+          </p>
+          <img class="media" src="media/Old inteface.gif" alt="Gif of the old interface">
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Design Requirements</h2>
+        <div class="media-area bottom" style="--contentSize: 75%">
+            <ul>
+              <li>Versitile (Able to link with any graphics program)</li>
+              <li>Beginner friendly (No knowledge is needed in programming or the system itself)</li>
+              <li>Robust (Any errors need to be prevented and warned before they happen)</li>
+              <li>No delay (Should add as little delay as possible from pressing a button to seeing the graphic)</li>
+              <li>Modular (Able to keep every part of the process in one application)</li>
+              <li>Future proof (Should still be usefull in future developments in technologie, with minimal changes in code)</li>
+              <li>Quick setup (Should take only about 30 minutes to create a new form)</li>
+            </ul>
+          <img class="media" src="media/Design Requirements.png" alt="Design outline documents">
+        </div>
+      </section>
+
+
+
+      <section class="project-section">
+        <h2>The start</h2>
+        <div class="media-area top" style="--contentSize: 75%">
+          <p>
+            I followed the example of the previous application and started making my interface in WinForms, a C# based program builder.
+          </p>
+          <img class="media" src="media/Custom Properties.png" alt="Custom Properties in WinForms">
+          <p>
+            My idea was to create one interface that would work for all sports.<br>
+            I kept my end user in mind throughout this process. As the end users would be non-coders, I wanted to keep down any coding wherever possible.
+          </p>
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>SQL databases</h2>
+        <div class="media-area bottom" style="--contentSize: 75%">
+          <p>
+            Besides making the interface for my app I also had to implement other features such as databases for keeping scores and teams:<br>
+          </p>
+          <img class="media" src="media/Databases.png" alt="Loading databases with SQL">
+          <p>
+            Using SQLite had its difficulties as I first wanted to give the user the possibility of changing the columns, something that SQLite is not capable of doing.<br>
+            So, after seeing what was possible, I reeled these ideas back as they were not fully required.</p>
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Modular Structure code</h2>
+        <div class="media-area top" style="--contentSize: 83%">
+          <img class="media" src="media/Clear coding structure.png" alt="Code for Modular Loading">
+          <p>
+            I made a simple modular style architecture, where the user could create a new interface using a pre-made template and put this in a folder to have it loaded.<br>
+            This vastly reduced the amount of duplicate code.
+          </p>
+        </div>
+      </section>
+
+
+
+      <section class="project-section">
+        <h2>Fail safe</h2>
+        <div class="media-area bottom" style="--contentSize: 70%">
+          <p>
+            A similar thing was made for each component that the user needed to interact with.
+            By doing so the end user did not have to look at any code and if something broke there would only be one function that was the issue.
+          </p>
+          <img class="media" src="media/Fail safe code.png" alt="Code for detecting problems">
+        </div>
+      </section>
+
+
+      <section class="project-section">
+        <h2>Interface</h2>
+        <div class="media-area bottom" style="--contentSize: 84%">
+          <p>
+            This got a lot of positive reactions when I showed the various features and how it allowed the company to very easily work with my application.<br>
+            What would have taken them weeks or even months to create a new interface, they could now do within one day.
+          </p>
+          <img class="media" src="media/Modular Framework.png" alt="Modular Framework in Application">
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Final results</h2>
+        <div class="media-area bottom" style="--contentSize: 81%">
+          <p>
+            Sadly, I wasn&#39;t able to fully complete the program as I had started late with my internship.<br>
+            This meant that in the end I had to leave the program around 75% completed.<br>
+            Still this internship was a massive learning experience for me, and I was able to make a lot of great connections though them.
+          </p>
+          <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+            <source src="media/Final product.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../projectsScript.js"></script>
+</body>
+</html>
