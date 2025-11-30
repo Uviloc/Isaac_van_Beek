@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Metadata extracted by the homepage -->
+    <meta name="title" content="Into the Depth">
+    <meta name="thumbnail" content="projects/Into_The_Depth/media/Thumbnail.png">
+    <meta name="description" content="
+    Into the Depth is a dark puzzle game I have been developing over multiple years.
+
+    With its simple beginnings but high ambitions,
+    it has challenged me in ways I would not expect.
+
+    Read all about the game and its development in this item.
+    ">
+    <meta name="tags" content="Unity,Level Design,C#,Substance Designer">
+    <meta name="color" content="#66021e">
+
+    <title>Into the Depth</title>
+
+    <link rel="stylesheet" href="../projectStyles.css">
+</head>
+<body class="project-page">
+
+  <div class="container-backdrop" aria-hidden="true"></div>
+  <div class="back-button">
+    <a href="/Isaac_van_Beek/index.html">
+      <img src="/Isaac_van_Beek/media/back.png">
+    </a>
+  </div>
+  <div class="project-container">
+    <header class="project-header">
+      <h1 class="project-title"></h1>
+      <div class="project-tags">
+      </div>
+    </header>
+    <main class="project-sections">
+      <!--
+      Position classes:
+      Media element BEFORE Text element:  left, top, bottom, topLeft, topRight
+      Media element AFTER Text element:   right, bottom
+      Change size of content:             style="--contentSize: 60%"
+
+      Section:
+      <section class="project-section">
+        <h2>???</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p></p>
+        </div>
+      </section>
+
+      Video:
+      <video class="media" controls preload="metadata" playsinline autoplay muted loop>
+        <source src="media/???.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+
+      Image:
+      <img class="media" src="media/???.png" alt="">
+      -->
+
+
+
+      <section class="project-section">
+        <h2>Introduction</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <p>
+            Into The Depth was the first full game I made in Unity. The concept came from me trying to make as simple of a game that could be fun despite not having a lot of work put into it. In the end I put in around 120 hours.
+          </p>
+          <img class="media" src="media/???.png" alt="???">
+          <p>
+            Game link: https://uviloc.itch.io/into-the-depth
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>trailer</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <p>
+            The project then grew further as I developed the game to be for mobile devices as well. The tilt controls were an interesting aspect that I always had planned and could now finally implement.
+          </p>
+          <img class="media" src="media/???.png" alt="???">
+          <p>
+            This is the trailer I made at this point, note that the graphics had to be scaled back to URP as mobile devices do not support HDRP. 
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Process</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p>
+            An interesting aspect is the fact that each attack you use on the enemies will use up attack points. These points can only be gotten by picking up items that are located around the maze.
+The textures are also my own, they were originally made for a different project, but they fitted perfectly into the game as it was.
+
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Challenges</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p>
+            Some difficulties I came across were the damage taken from the sliding blocks. This damage should only be applied when the player was between a box and a wall. However, many of the solutions I first thought of did not work. Such as having the player check if it’s colliding a box and a wall. Then checking on which sides these collisions were on. This had the issue that I could not then check what force the box was applying to the player. So even when the speed of the box was minimal the player would still receive max damage. I also at one point tried raytracing, but in the end, I came up with the solution of adding a trigger collider to each side of the box. Then this single collider can check if both a player and a wall is inside of it. The collision box was also scaled (by code so it’s consistent for any sized box) to only allow a player to be in between it and a wall, so it would only trigger when it was actually fully colliding.
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Mobile Development</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          
+          <p>
+            I came back to this project about a year later. The idea was always to create a mobile version for this game. The tilting field was directly inspired by the unique controls that phones had.
+          </p>
+          <img class="media" src="media/???.png" alt="???">
+          <p>
+            The process of getting this to work was both easier and more difficult then expected. I was under the understanding that gyroscopes and accelerometers were difficult to implement as not a lot of games have it as a feature. However, Unity had built-in features to make the use of these mobile components possible.
+The part that was much more difficult in the end.
+One was the problems that came with downgrading the graphics and materials, as I was using Substance Designer materials.
+The other was how the limits of the rotation needed to be tweaked much more; therefore, the game balancing was also thrown out of place.
+
+          </p>
+        </div>
+      </section>
+
+      <section class="project-section">
+        <h2>Plans for the future</h2>
+        <div class="media-area [positionClass]" style="--contentSize: 60%">
+          <img class="media" src="media/???.png" alt="???">
+          <p>
+            Halfway through this project I decided I wanted to release this project for people to play. This did influence my work, since I needed to have some future proofing and have all assets and audio be correctly licensed.
+Then after I finished this project and got my grade, I made a future plan to update the game with more content and improve the core concept. However, with me being busy with my study I knew that this would take a while to come to fruition.
+
+          </p>
+        </div>
+      </section>
+
+
+
+    </main>
+  </div>
+  <script src="../projectsScript.js"></script>
+</body>
+</html>
