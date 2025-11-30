@@ -31,8 +31,8 @@ async function setIconImgSources(img, name) {
         for (const b of bases) {
             const variants = [`${b}_Logo.png`, `${b}.png`];
             for (const v of variants) {
-                candidates.push(`/media/${v}`);               // project pages are one level deeper -> ../media/
-                candidates.push(`/media/${encodeURIComponent(v)}`);
+                candidates.push(`/Isaac_van_Beek/media/${v}`);               // project pages are one level deeper -> ../media/
+                candidates.push(`/Isaac_van_Beek/media/${encodeURIComponent(v)}`);
             }
         }
 
