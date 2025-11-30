@@ -1,0 +1,470 @@
+body {
+    background: #222;
+    font-family: Arial, sans-serif;
+    margin: 0px;
+}
+
+
+.mail-link {
+    color:#eee;
+}
+
+
+.tag {
+    border-radius: 15px;
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    background-color: #000;
+}
+
+
+
+.portfolio-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
+}
+
+.portfolio-item {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    transition: transform .2s;
+}
+
+.portfolio-item:hover {
+    transform: scale(1.02);
+}
+
+.portfolio-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Portfolio detail content */
+.portfolio-content {
+    max-width: 800px;
+    margin: auto;
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+}
+
+.clearfix::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.tag-button {
+    display: inline-block;
+    padding: 10px;
+    background: #636363;
+    color: #fff;
+    cursor: pointer;
+    filter: blur(1px) saturate(.1);    /* blur + slightly desaturate */
+    transform: scale(.98);
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease background .2s;
+}
+
+.tag-button.selected {
+    color: #eee;
+}
+
+
+
+
+
+/* ---------- LAYOUT BANDS ---------- */
+
+.top-bar, .bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #333;
+}
+
+.top-bar {
+    height: 170px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+.bottom-bar {
+    width: 100%;
+    height: 40px;
+    position: absolute;
+    bottom: 0;
+    text-align: center;
+}
+
+/* Profile / About placeholders */
+.profile-box, .about-box {
+    background-color: #626262;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px;
+    height: 60%;
+}
+
+/* Tag filter stays at the right side */
+.tag-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    width: 25%;
+}
+
+
+.profile-box {
+    height: 80%;
+    max-height: 100%;
+    max-width: 10%;
+    padding: 0;
+}
+
+.profile-box>* {
+    max-width: 100%;
+    max-height: 100%;
+    align-self: center;
+}
+
+.about-box {
+    width: 50%;
+    color: #e4e4e4;
+}
+
+
+
+
+
+/* ---------- CAROUSEL AREA ---------- */
+
+.carousel-wrapper {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 170px - 40px);  /* viewport minus top & bottom bars */
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* container holds items positioned by transform */
+.carousel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* ---------- TRAPEZOID PANELS ---------- */
+
+.carousel-item-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    filter: drop-shadow(10px 0px rgba(0, 0, 0, 0.3))
+            drop-shadow(-10px 0px rgba(0, 0, 0, 0.3));
+}
+
+.carousel-item {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 40%;                 /* wide, will overlap */
+    max-width: 900px;
+    padding: 20px;
+    box-sizing: border-box;
+    color: white;
+    transition: transform 0.5s cubic-bezier(.4,.5,.8,1), opacity 0.35s ease, filter 0.35s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    clip-path: polygon(
+        10% 0%,
+        100% 0%,
+        90% 100%,
+        0% 100%
+    );
+    border-radius: 4px;
+    overflow: hidden;
+    will-change: transform, opacity;
+}
+
+
+/* position classes: translateX is relative to center; scale and z-index tuned */
+.carousel-item.pos--3, .carousel-item.pos3 {
+    z-index: 0;
+    filter: blur(0.8px);
+}
+.carousel-item.pos--2, .carousel-item.pos2 {
+    z-index: 1;
+    filter: blur(0.6px);
+}
+.carousel-item.pos--1, .carousel-item.pos1 {
+    z-index: 2;
+    filter: blur(0.2px);
+}
+.carousel-item.pos0 {
+    transform: translateX(75%);
+    z-index: 3;
+    cursor: pointer;
+}
+
+.carousel-item.pos--3 { transform: translateX(-75%); }
+.carousel-item.pos--2 { transform: translateX(-45%); }
+.carousel-item.pos--1 { transform: translateX(15%); }
+.carousel-item.pos1 { transform: translateX(135%); }
+.carousel-item.pos2 { transform: translateX(195%); }
+.carousel-item.pos3 { transform: translateX(255%); }
+
+/* hide items outside the -2..2 window instantly (no transition) */
+.carousel-item.hidden {
+    display: none;
+    transition: none !important;
+}
+
+/* clickable only for center three */
+.carousel-item[aria-clickable="false"] { pointer-events: none; cursor: default; opacity: 0.6; }
+
+/* Item contents */
+.carousel-item h2 { margin: 8px 0 6px; text-align: center; color: #fff; }
+.carousel-item p { margin-top: 8px; color: rgba(255,255,255,0.95); max-width: 90%; text-align: center; }
+.carousel-item .item-tags { margin: 6px 0 12px; display: flex; flex-wrap: wrap; gap: 10px; }
+.item-tag { padding: 10px; }
+
+/* make images scale down to leave room for text */
+.carousel-item img {
+    max-height: 40vh;
+    max-width: 85%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin: 8px auto;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+/* remove white gaps by ensuring container bg matches body; items overlap to join */
+.carousel-wrapper, .carousel { background: transparent; }
+
+/* small visual for prevented-unselect (from earlier script) */
+.tag-button.cannot-unselect { animation: shake .3s; }
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
+}
+
+/* page exit animation used on main page before navigating to a project */
+body.page-exit .top-bar {
+    transform: translateY(-110%);
+    transition: transform 360ms cubic-bezier(.4,.5,.8,1);
+}
+body.page-exit .bottom-bar {
+    transform: translateY(110%);
+    transition: transform 360ms cubic-bezier(.4,.5,.8,1);
+}
+
+/* ensure transitions don't conflict */
+.top-bar, .bottom-bar {
+    will-change: transform;
+}
+
+/* Styling for the expanding clone used during page transition */
+.expanding-item {
+    box-shadow: 0 18px 48px rgba(0,0,0,0.45);
+    transform-origin: center top;
+    /* remove the trapezoid clip so it expands as a rect */
+    clip-path: none !important;
+    /* make content readable during expand */
+    background-clip: padding-box;
+}
+
+/* keep transitions smooth if clone has children with transitions */
+.expanding-item * {
+    transition: none !important;
+}
+
+/* Full-page fade overlay used when ENABLE_PAGE_FADE is true */
+.page-fade-overlay {
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 480ms cubic-bezier(.4,.5,.8,1);
+}
+
+/* Tag/icon box: icon visible by default, text hidden.
+   On hover/focus/selected the icon fades out and the text fades in. */
+.tag-button, .item-tag {
+    display: inline-block;
+    position: relative;
+    width: 70px;
+    height: 70px;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    border-radius: 15px;
+    color: #fff;
+    vertical-align: middle;
+    overflow: hidden;
+    transition: background .18s ease, transform .12s ease;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+
+.tag-button.selected, .item-tag {
+    background: #eee;
+    filter: blur(0px) saturate(1);    /* blur + slightly desaturate */
+    transform: scale(1);
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease;
+}
+
+/* hover/focus background */
+.tag-button:focus, .tag-button:hover,
+.item-tag:hover, .item-tag:focus {
+    background: #444;
+    outline: none;
+}
+
+/* Icon centered inside box */
+.carousel-item .tag-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 90%;
+    height: 90%;
+    max-width: 90%;
+    max-height: 90%;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    transition: opacity .18s ease, transform .18s ease;
+    display: block;
+}
+
+/* Icon centered inside box */
+.tag-filter .tag-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 65px;
+    height: 65px;
+    max-width: 65px;
+    max-height: 65px;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    transition: opacity .18s ease, transform .18s ease;
+    display: block;
+}
+
+/* Text overlays the icon, centered. Hidden by default. */
+.tag-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) translateY(4px);
+    opacity: 0;
+    transition: opacity .18s ease, transform .18s ease;
+    color: inherit;
+    font-size: 14px;
+}
+
+/* ensure stacking so text sits above icon */
+.tag-button .tag-icon,
+.item-tag .tag-icon {
+  z-index: 1;
+}
+.tag-button .tag-text,
+.item-tag .tag-text {
+  z-index: 2;
+}
+
+/* hover: keep icon visible but blurred / faded behind the text */
+.tag-button:hover .tag-icon,
+.tag-button:focus .tag-icon,
+.item-tag:hover .tag-icon,
+.item-tag:focus .tag-icon {
+    opacity: 0.8;                       /* reduced opacity */
+    filter: blur(2px) saturate(.1);    /* blur + slightly desaturate */
+    transform: translate(-50%, -50%) scale(.98);
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease;
+}
+
+/* text still fades in on hover on top of the blurred icon */
+.tag-button:hover .tag-text,
+.tag-button:focus .tag-text,
+.item-tag:hover .tag-text,
+.item-tag:focus .tag-text {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+}
+
+
+/* ensure item-tag inside carousel has readable background and spacing */
+/* .carousel-item .item-tag { background: rgba(0,0,0,0.25); padding: 6px 8px; width: auto; height: auto; border-radius: 12px; position: relative; display: inline-block; } */
+
+/* 3D hover tilt for images (pointer-position-based) */
+.media {
+  /* CSS vars controlled by JS */
+  --rx: 0deg; /* rotateX */
+  --ry: 0deg; /* rotateY */
+  --tz: 0px; /* translateZ on hover/tilt - kept for compatibility; default 0 to avoid growth */
+  --tilt-shadow: 0 18px 40px rgba(0,0,0,0.45);
+
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+  transition:
+    transform 220ms cubic-bezier(.2,.9,.2,1),
+    box-shadow 220ms ease,
+    filter 180ms ease;
+  /* use the perspective() on the parent (.media-area) only — don't apply perspective() on the element itself.
+     also avoid translateZ here so the element doesn't visually grow and create scrollbars. */
+  transform-origin: center center;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  box-shadow: none;
+  filter: none;
+}
+
+/* when JS enables tilting on pointerenter (no translateZ by default) */
+.media.tilting {
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  box-shadow: var(--tilt-shadow);
+  filter: brightness(1.03) saturate(1.05);
+}
+
+/* keep a sensible keyboard focus fallback */
+.media:focus {
+  transform: rotateX(6deg) rotateY(-8deg);
+  box-shadow: var(--tilt-shadow);
+  filter: brightness(1.03) saturate(1.05);
+}
+
+/* Clip transformed visuals at the section level so tilting can't introduce page scrollbars.
+   Inner scrolling inside .media-area / paragraphs remains unchanged. */
+.project-section {
+  overflow: hidden;
+}
+
+/* disable heavy transforms on small screens for performance/UX */
+@media (max-width: 900px) {
+  .media {
+    transition: none;
+    transform: none;
+  }
+}
