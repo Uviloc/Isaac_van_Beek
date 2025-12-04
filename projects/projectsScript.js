@@ -143,13 +143,87 @@ function attachBackFade() {
     }, { passive: false });
 }
 
+// ---------- IMAGE OVERLAY / ZOOM ----------
+
+function createImageOverlay(src, alt) {
+    // avoid creating multiple overlays
+    if (document.querySelector('.image-overlay')) return null;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'image-overlay';
+
+    const inner = document.createElement('div');
+    inner.className = 'overlay-inner';
+
+    const img = document.createElement('img');
+    img.alt = alt || '';
+    img.src = src;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.type = 'button';
+    closeBtn.innerHTML = '&#x2715;'; // simple X
+
+    inner.appendChild(img);
+    inner.appendChild(closeBtn);
+    overlay.appendChild(inner);
+
+    // click outside image closes overlay
+    overlay.addEventListener('click', (ev) => {
+        if (ev.target === overlay) removeOverlay(overlay);
+    });
+
+    // close button
+    closeBtn.addEventListener('click', () => removeOverlay(overlay));
+
+    // close on Esc
+    function onKey(e) {
+        if (e.key === 'Escape') removeOverlay(overlay);
+    }
+
+    function removeOverlay(node) {
+        try {
+            document.removeEventListener('keydown', onKey);
+            document.body.style.overflow = '';
+            node.classList.remove('visible');
+            // allow transition then remove
+            setTimeout(() => { if (node.parentNode) node.parentNode.removeChild(node); }, 200);
+        } catch (e) { if (node.parentNode) node.parentNode.removeChild(node); }
+    }
+
+    document.addEventListener('keydown', onKey);
+
+    // prevent body scroll while open
+    document.body.style.overflow = 'hidden';
+
+    document.body.appendChild(overlay);
+    // small delay so transition can apply
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+
+    return overlay;
+}
+
+function attachImageOverlayHandlers() {
+    const container = document.querySelector('.project-sections') || document.body;
+    container.addEventListener('click', (ev) => {
+        const target = ev.target;
+        // only respond to images with class "media"
+        if (target && target.tagName === 'IMG' && target.classList.contains('media') && !target.classList.contains('no-expand')) {
+            // use the image's src (full file) — if you have a data-original attribute, prefer that
+            const src = target.dataset.original || target.src;
+            const alt = target.alt || '';
+            createImageOverlay(src, alt);
+        }
+    });
+}
+
 // ---------- INIT ----------
 function initProjectScript() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', populateHeaderFromMeta, { once: true });
     else populateHeaderFromMeta();
     if (!ENABLE_PAGE_FADE) return;
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { fadeInOnLoad(); attachBackFade(); }, { once: true });
-    else { fadeInOnLoad(); attachBackFade(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { fadeInOnLoad(); attachBackFade(); attachImageOverlayHandlers(); }, { once: true });
+    else { fadeInOnLoad(); attachBackFade(); attachImageOverlayHandlers(); }
 }
 
 initProjectScript();

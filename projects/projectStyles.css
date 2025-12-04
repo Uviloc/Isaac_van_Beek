@@ -331,3 +331,70 @@ body {
 
 /* ensure videos get same sizing/cropping behavior as images and a neutral background when cropped */
 video.media { display: block; object-fit: cover; background: #000; }
+/* make images indicate they're zoomable */
+img.media:not(no-expand) { cursor: pointer; }
+
+/* Image overlay modal */
+.image-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.88);
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity .18s ease;
+  pointer-events: none;
+}
+
+.image-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.image-overlay .overlay-inner {
+  position: relative;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px 5px #454545;
+}
+
+.image-overlay img {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  border-radius: 4px;
+  display: block;
+}
+
+/* close button */
+.image-overlay .close-btn {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  border: none;
+  backdrop-filter: blur(4px);
+}
+
+@media (max-width: 600px) {
+  .image-overlay .close-btn { right: 10px; top: 10px; width: 40px; height: 40px; font-size: 18px; }
+}
