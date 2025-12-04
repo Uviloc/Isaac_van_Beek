@@ -9,7 +9,25 @@ const PROJECT_PAGE_FADE_EASE = 'cubic-bezier(.4,.5,.8,1)';
 
 // ---------- META / HEADER HELPERS ----------
 const getMeta = name => document.querySelector(`meta[name="${name}"]`)?.getAttribute('content') || '';
-function applyAccentColor(color) { if (color) document.documentElement.style.setProperty('--accent-color', color); }
+// replaced applyAccentColor to support gradient inner-args or full gradient strings
+function applyAccentColor(color) {
+    if (!color) return;
+    // normalize and remove trailing semicolon if present
+    let v = String(color).trim().replace(/\s*;$/,'');
+    // if the value already looks like a gradient, use it as-is; otherwise wrap inner-args in radial-gradient
+    const isGradient = /^\s*(radial-gradient|linear-gradient)\s*\(/i.test(v);
+    const bg = isGradient ? v : `radial-gradient(${v})`;
+    // set a full CSS background variable and also expose a primary color (first listed color) for other uses
+    try {
+        document.documentElement.style.setProperty('--accent-bg', bg);
+        // primary color is first component before a top-level comma (useful for text/icon contrast)
+        const primary = v.split(',')[0].trim();
+        document.documentElement.style.setProperty('--accent-color', primary);
+    } catch (e) {
+        // fail silently
+        console.error(e);
+    }
+}
 
 // ---------- IMAGE / ICON LOADER (project page copy) ----------
 /*

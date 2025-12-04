@@ -124,6 +124,21 @@ async function processMoveQueue() {
 }
 
 // ---------- CREATION / UPDATES ----------
+// helper: produce a CSS radial-gradient string from project meta "color"
+// - accepts full gradients (radial/linear) and returns them as-is
+// - accepts comma-separated color lists -> wraps as radial-gradient(..., colors)
+// - accepts a single color -> creates a subtle radial using that color
+function formatColorForRadial(color) {
+    if (!color) return "";
+    const v = String(color).trim().replace(/\s*;$/,'');
+    // if it's already a gradient (radial or linear) return as-is
+    if (/^\s*(radial-gradient|linear-gradient)\s*\(/i.test(v)) return v;
+    // multiple comma separated values -> use them as stops inside a radial gradient
+    if (v.includes(',')) return `radial-gradient(circle at 50% 10%, ${v})`;
+    // single color -> create a gentle radial using the color and a faint outer fade
+    return `radial-gradient(${v}, rgb(0,0,0))`;
+}
+
 function createCarouselElement(item, idx) {
     const wrapper = document.createElement("div");
     wrapper.className = "carousel-item-container";
@@ -132,7 +147,8 @@ function createCarouselElement(item, idx) {
     el.dataset.idx = idx;
     el.style.transition = "";
     el.style.opacity = "";
-    el.style.background = item.color || "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.35))";
+    // use radial-gradient background based on meta color
+    el.style.backgroundImage = formatColorForRadial(item.color) || "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.35))";
 
     // helper to set icon src trying multiple filename variants (handles characters like '#' and '/')
     function setIconImgSources(img, name) {
@@ -229,7 +245,11 @@ function updateCarouselClasses(initial = false, animMs = null) {
         const clickable = (dist >= -2 && dist <= 2) && (logicalDist <= 2);
         el.setAttribute("aria-clickable", clickable ? "true" : "false");
         el.style.pointerEvents = clickable ? "auto" : "none";
-        if (obj.data && obj.data.color) el.style.background = obj.data.color;
+        if (obj.data && obj.data.color) {
+            el.style.backgroundImage = formatColorForRadial(obj.data.color);
+        } else {
+            el.style.backgroundImage = "";
+        }
         if (cont) cont.style.zIndex = String(dist === 0 ? 50 : Math.abs(dist) === 1 ? 30 : Math.abs(dist) === 2 ? 15 : 2);
         if (initial) requestAnimationFrame(() => { el.getBoundingClientRect(); el.style.transition = ""; });
         else if (animMs !== null) el.style.transitionDuration = animMs + "ms";

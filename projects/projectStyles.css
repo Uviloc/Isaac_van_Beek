@@ -2,6 +2,11 @@
   /* rotation angle (used by transform and the sin() calculations) */
   --angle: 10deg;
   --contentSize: 40%;
+
+  /* theme background (set by projectsScript.applyAccentColor).
+     Default fallback if meta color is missing: subtle dark radial. */
+  --accent-bg: radial-gradient(circle at 50% 10%, rgba(0,0,0,0.16), rgba(0,0,0,0.00));
+  --accent-color: rgba(0,0,0,0.1);
 }
 
 /* Typography / section paragraph */
@@ -48,6 +53,9 @@ body {
   padding: 0;
   overflow-x: hidden;
   overflow-y: hidden;
+  background-image: radial-gradient(#00000000, #0000007d);
+  height: 100vh;
+  width: 100vw;
 }
 
 /* container rotated layout */
@@ -86,7 +94,8 @@ body {
   width: 70%;
   transform: translateX(-50%) rotate(var(--angle));
   transform-origin: center center;
-  background: var(--accent-color, #f4a03b);
+  /* use the full background string provided by the script (or fallback) */
+  background-image: var(--accent-bg);
   z-index: 0;
 }
 

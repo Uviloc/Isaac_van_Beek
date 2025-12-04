@@ -91,6 +91,7 @@ body {
     height: 170px;
     padding-left: 50px;
     padding-right: 50px;
+    background-image: linear-gradient(0deg, #000000c7, #00000069);
 }
 
 .bottom-bar {
@@ -99,6 +100,7 @@ body {
     position: absolute;
     bottom: 0;
     text-align: center;
+    background-image: linear-gradient(180deg, #000000c7, #00000069);
 }
 
 /* Profile / About placeholders */
@@ -109,6 +111,7 @@ body {
     padding: 20px;
     margin: 20px;
     height: 60%;
+    background-image: radial-gradient(#0000005e, #000000a6);
 }
 
 /* Tag filter stays at the right side */
