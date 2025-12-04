@@ -15,7 +15,7 @@ body {
     width: 50px;
     height: 50px;
     text-align: center;
-    background-color: #000;
+    background-color: #000; 
 }
 
 
@@ -104,6 +104,7 @@ body {
 /* Profile / About placeholders */
 .profile-box, .about-box {
     background-color: #626262;
+    box-shadow: 1px 2px 20px 3px #0000005e;
     border-radius: 10px;
     padding: 20px;
     margin: 20px;
@@ -243,7 +244,7 @@ body {
 .item-tag { padding: 10px; }
 
 /* make images scale down to leave room for text */
-.carousel-item img {
+.carousel-item .media {
     max-height: 40vh;
     max-width: 85%;
     width: auto;
@@ -253,6 +254,7 @@ body {
     margin: 8px auto;
     border-radius: 4px;
     font-size: 0.85em;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.45);
 }
 
 /* remove white gaps by ensuring container bg matches body; items overlap to join */
