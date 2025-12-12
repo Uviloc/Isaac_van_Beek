@@ -345,21 +345,36 @@ function updateCarouselClasses(initial = false, animMs = null) {
         const idx = obj.idx;
         let dist = signedDistance(idx, currentIndex, n);
         dist = clamp(dist, -3, 3);
+
         el.classList.remove("pos--3","pos--2","pos--1","pos0","pos1","pos2","pos3","hidden");
         const cls = dist === -3 ? "pos--3" : dist === -2 ? "pos--2" : dist === -1 ? "pos--1" : dist === 0 ? "pos0" : dist === 1 ? "pos1" : dist === 2 ? "pos2" : "pos3";
         el.classList.add(cls);
+
+        // logical (circular) absolute distance from center
         const logicalDist = Math.abs(signedDistance(idx, currentIndex, n));
-        if (logicalDist > 3) { el.classList.add("hidden"); if (cont) cont.style.display = "none"; }
-        else { if (cont) cont.style.display = ""; }
-        const clickable = (dist >= -2 && dist <= 2) && (logicalDist <= 2);
+
+        // hide anything outside display radius (2)
+        if (logicalDist > 2) {
+            el.classList.add("hidden");
+            if (cont) cont.style.display = "none";
+        } else {
+            el.classList.remove("hidden");
+            if (cont) cont.style.display = "";
+        }
+
+        // clickable if within visible logical radius (<=2) and not hidden
+        const clickable = logicalDist <= 2 && !el.classList.contains('hidden');
         el.setAttribute("aria-clickable", clickable ? "true" : "false");
         el.style.pointerEvents = clickable ? "auto" : "none";
-        if (obj.data && obj.data.color) {
-            el.style.backgroundImage = formatColorForRadial(obj.data.color);
-        } else {
-            el.style.backgroundImage = "";
-        }
-        if (cont) cont.style.zIndex = String(dist === 0 ? 50 : Math.abs(dist) === 1 ? 30 : Math.abs(dist) === 2 ? 15 : 2);
+
+        // update background safely
+        if (obj.data && obj.data.color) el.style.backgroundImage = formatColorForRadial(obj.data.color);
+        else el.style.backgroundImage = "";
+
+        // z-index by signed dist (center highest)
+        const absd = Math.abs(dist);
+        if (cont) cont.style.zIndex = String(dist === 0 ? 50 : absd === 1 ? 30 : absd === 2 ? 15 : 2);
+
         if (initial) requestAnimationFrame(() => { el.getBoundingClientRect(); el.style.transition = ""; });
         else if (animMs !== null) el.style.transitionDuration = animMs + "ms";
         else el.style.transitionDuration = "";
@@ -370,8 +385,15 @@ function updateCarouselClasses(initial = false, animMs = null) {
 function rebuildCarousel() {
     let filtered = portfolioItems;
     if (selectedTags.size) filtered = portfolioItems.filter(p => p.tags.some(t => selectedTags.has(t)));
-    if (!filtered.length) return;
     const container = document.getElementById("carousel");
+
+    // if nothing matches, clear carousel (avoid leaving old items visible)
+    if (!filtered.length) {
+        carouselItems = [];
+        if (container) container.innerHTML = "";
+        return;
+    }
+
     const displayed = carouselItems.map(c => c.data.url);
     const filteredUrls = filtered.map(f => f.url);
     const urlsToRemove = displayed.filter(u => !filteredUrls.includes(u));
@@ -700,22 +722,24 @@ function initPortfolioIfNeeded() {
             if (!seen.has(t)) { ordered.push(t); seen.add(t); }
         }
 
-        // set global ALL_TAGS BEFORE decoding URL so bitmask decoding can map indices
         ALL_TAGS = Array.from(ordered);
 
-        // now that ALL_TAGS exists, decode tags from the URL (if present)
+        // decode URL tags now that ALL_TAGS exists
         const urlTags = readTagsFromUrl().filter(t => allTags.has(t));
         if (urlTags.length) selectedTags = new Set(urlTags);
         else selectedTags = new Set([...ALL_TAGS]);
 
-        // Adjust firstTagClick behavior now that selection can come from the URL:
         if (!ENABLE_FIRST_TAG_CLICK) firstTagClick = false;
         else firstTagClick = (selectedTags.size !== 1);
 
         buildTagFilterBar([...ALL_TAGS]);
         buildCarousel(items);
 
-        // ensure the url reflects the initial selection (remove param if all selected)
+        // apply filter immediately if not default (ensures only matching items shown)
+        if (!(selectedTags.size === ALL_TAGS.length && ALL_TAGS.every(t => selectedTags.has(t)))) {
+            rebuildCarousel();
+        }
+
         updateUrlWithTags(selectedTags);
     }).catch(err => {
         console.error('initPortfolioIfNeeded error', err);
@@ -881,84 +905,3 @@ async function setIconImgSources(img, name) {
         try { img.style.display = "none"; } catch {}
     }
 }
-
-// Remove transient overlays used by fades / image zooms
-function removeTransientOverlays() {
-    try {
-        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
-            if (n && n.parentNode) n.parentNode.removeChild(n);
-        });
-    } catch (e) { /* ignore */ }
-}
-
-// Restore any inline styles that could keep the page visually hidden after bfcache restore
-function restoreUIState() {
-    try {
-        removeTransientOverlays();
-        document.body.style.overflow = '';
-
-        // top / bottom chrome
-        ['.top-bar', '.bottom-bar', '.container-backdrop', '.back-button'].forEach(sel => {
-            const el = document.querySelector(sel);
-            if (el) {
-                el.style.transition = '';
-                el.style.transform = '';
-                el.style.opacity = '';
-                el.style.visibility = '';
-            }
-        });
-
-        // carousel container
-        const carousel = document.getElementById('carousel');
-        if (carousel) {
-            carousel.style.pointerEvents = '';
-            carousel.style.visibility = '';
-            carousel.style.opacity = '';
-            carousel.style.transition = '';
-        }
-
-        // clear inline styles from each carousel item (if present)
-        if (Array.isArray(carouselItems) && carouselItems.length) {
-            carouselItems.forEach(obj => {
-                try {
-                    const el = obj && obj.element;
-                    const cont = obj && obj.container;
-                    if (el) {
-                        el.style.transition = '';
-                        el.style.opacity = '';
-                        el.style.transform = '';
-                        el.style.pointerEvents = '';
-                        el.style.visibility = '';
-                    }
-                    if (cont) {
-                        cont.style.transition = '';
-                        cont.style.opacity = '';
-                        cont.style.transform = '';
-                        cont.style.visibility = '';
-                    }
-                } catch (e) { /* ignore per-item errors */ }
-            });
-            // ensure classes / layout are re-applied
-            if (typeof updateCarouselClasses === 'function') updateCarouselClasses(true);
-        }
-    } catch (e) { /* ignore */ }
-}
-
-// Ensure initialization & UI restore run when the page is restored from bfcache
-window.addEventListener('pageshow', (ev) => {
-    try {
-        // Always attempt to remove overlays and restore inline styles
-        restoreUIState();
-
-        // If carousel page, re-run init (safe - will early-return if not applicable)
-        if (typeof initPortfolioIfNeeded === 'function') initPortfolioIfNeeded();
-
-        // Small timeout to allow browser to finish restoring visual state, then reflow classes
-        setTimeout(() => {
-            try {
-                restoreUIState();
-                if (typeof updateCarouselClasses === 'function') updateCarouselClasses(false);
-            } catch (e) { /* ignore */ }
-        }, 60);
-    } catch (e) { /* ignore */ }
-}, { passive: true });
