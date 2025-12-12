@@ -881,3 +881,84 @@ async function setIconImgSources(img, name) {
         try { img.style.display = "none"; } catch {}
     }
 }
+
+// Remove transient overlays used by fades / image zooms
+function removeTransientOverlays() {
+    try {
+        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
+            if (n && n.parentNode) n.parentNode.removeChild(n);
+        });
+    } catch (e) { /* ignore */ }
+}
+
+// Restore any inline styles that could keep the page visually hidden after bfcache restore
+function restoreUIState() {
+    try {
+        removeTransientOverlays();
+        document.body.style.overflow = '';
+
+        // top / bottom chrome
+        ['.top-bar', '.bottom-bar', '.container-backdrop', '.back-button'].forEach(sel => {
+            const el = document.querySelector(sel);
+            if (el) {
+                el.style.transition = '';
+                el.style.transform = '';
+                el.style.opacity = '';
+                el.style.visibility = '';
+            }
+        });
+
+        // carousel container
+        const carousel = document.getElementById('carousel');
+        if (carousel) {
+            carousel.style.pointerEvents = '';
+            carousel.style.visibility = '';
+            carousel.style.opacity = '';
+            carousel.style.transition = '';
+        }
+
+        // clear inline styles from each carousel item (if present)
+        if (Array.isArray(carouselItems) && carouselItems.length) {
+            carouselItems.forEach(obj => {
+                try {
+                    const el = obj && obj.element;
+                    const cont = obj && obj.container;
+                    if (el) {
+                        el.style.transition = '';
+                        el.style.opacity = '';
+                        el.style.transform = '';
+                        el.style.pointerEvents = '';
+                        el.style.visibility = '';
+                    }
+                    if (cont) {
+                        cont.style.transition = '';
+                        cont.style.opacity = '';
+                        cont.style.transform = '';
+                        cont.style.visibility = '';
+                    }
+                } catch (e) { /* ignore per-item errors */ }
+            });
+            // ensure classes / layout are re-applied
+            if (typeof updateCarouselClasses === 'function') updateCarouselClasses(true);
+        }
+    } catch (e) { /* ignore */ }
+}
+
+// Ensure initialization & UI restore run when the page is restored from bfcache
+window.addEventListener('pageshow', (ev) => {
+    try {
+        // Always attempt to remove overlays and restore inline styles
+        restoreUIState();
+
+        // If carousel page, re-run init (safe - will early-return if not applicable)
+        if (typeof initPortfolioIfNeeded === 'function') initPortfolioIfNeeded();
+
+        // Small timeout to allow browser to finish restoring visual state, then reflow classes
+        setTimeout(() => {
+            try {
+                restoreUIState();
+                if (typeof updateCarouselClasses === 'function') updateCarouselClasses(false);
+            } catch (e) { /* ignore */ }
+        }, 60);
+    } catch (e) { /* ignore */ }
+}, { passive: true });

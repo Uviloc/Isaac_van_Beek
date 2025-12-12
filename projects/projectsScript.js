@@ -253,6 +253,50 @@ function attachImageOverlayHandlers() {
     });
 }
 
+// Remove transient overlays used by fades / image zooms (project page)
+function removeTransientOverlays() {
+    try {
+        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
+            if (n && n.parentNode) n.parentNode.removeChild(n);
+        });
+    } catch (e) { /* ignore */ }
+}
+
+// Restore inline styles that could hide the project page after bfcache restore
+function restoreProjectUIState() {
+    try {
+        removeTransientOverlays();
+        document.body.style.overflow = '';
+
+        const top = document.querySelector('.top-bar');
+        const bottom = document.querySelector('.bottom-bar');
+        const container = document.querySelector('.project-container');
+        const backdrop = document.querySelector('.container-backdrop');
+        const backBtn = document.querySelector('.back-button');
+
+        [top, bottom, container, backdrop, backBtn].forEach(el => {
+            if (!el) return;
+            el.style.transition = '';
+            el.style.transform = '';
+            el.style.opacity = '';
+            el.style.visibility = '';
+        });
+    } catch (e) { /* ignore */ }
+}
+
+// Re-apply header/meta population and handlers when page is restored via back/forward
+window.addEventListener('pageshow', (ev) => {
+    try {
+        restoreProjectUIState();
+        if (typeof initProjectScript === 'function') initProjectScript();
+
+        // small reflow to ensure any transitions/classes re-evaluate
+        setTimeout(() => {
+            try { restoreProjectUIState(); } catch (e) { /* ignore */ }
+        }, 60);
+    } catch (e) { /* ignore */ }
+}, { passive: true });
+
 // ---------- INIT ----------
 function initProjectScript() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', populateHeaderFromMeta, { once: true });
