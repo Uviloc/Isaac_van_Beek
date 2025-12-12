@@ -696,6 +696,9 @@ function initPortfolioIfNeeded() {
     const carouselEl = document.getElementById("carousel");
     if (!carouselEl) return;
 
+    // remove any stray overlays before we start initializing UI
+    removeTransientOverlays();
+
     loadPortfolio().then(items => {
         portfolioItems = items;
 
@@ -739,9 +742,24 @@ function initPortfolioIfNeeded() {
 
         // ensure the url reflects the initial selection (helpful when defaulted)
         updateUrlWithTags(selectedTags);
+
+        // Safety: ensure carousel is visible and any overlays removed after initialization.
+        // Some browsers/histories can restore a cached page-state that leaves overlays or hides content.
+        setTimeout(() => {
+            try {
+                removeTransientOverlays();
+                if (typeof updateCarouselClasses === 'function') updateCarouselClasses(true);
+                const c = document.getElementById('carousel');
+                if (c) { c.style.visibility = ''; c.style.opacity = ''; }
+            } catch (e) { /* ignore */ }
+        }, 80);
     }).catch(err => {
         // don't let failures here leave the page blank
         console.error('initPortfolioIfNeeded error', err);
+        // ensure overlays removed so user still sees content
+        removeTransientOverlays();
+        const c = document.getElementById('carousel');
+        if (c) { c.style.visibility = ''; c.style.opacity = ''; }
     });
 }
 
@@ -751,6 +769,262 @@ if (document.readyState === 'loading') {
 } else {
     initPortfolioIfNeeded();
 }
+
+// ensure UI re-initializes when page is restored from bfcache (back/forward navigation)
+window.addEventListener('pageshow', (ev) => {
+    try {
+        // remove any overlays restored with the page
+        removeTransientOverlays();
+        // Re-run initialization logic which is safe (it will early-return if #carousel is missing)
+        initPortfolioIfNeeded();
+    } catch (e) { /* ignore */ }
+});
+
+// small accessibility: mouse wheel rotates carousel
+document.addEventListener("wheel", e => {
+    if (Math.abs(e.deltaY) < 10) return;
+    const steps = Math.min(2, Math.max(1, Math.round(Math.abs(e.deltaY) / 180)));
+    enqueueSteps((e.deltaY > 0 ? 1 : -1) * steps);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// pointer-based 3D tilt for elements with class "media"
+(function () {
+  if (!ENABLE_TILT) return; // allow global disable
+
+  const EL_SELECTOR = TILT_SELECTOR;
+  const MAX_DEG = TILT_DEG;
+  const Z_PUSH_PX = Number(Z_PUSH) || 0;
+  const USE_Z = Boolean(ENABLE_Z_PUSH) && Z_PUSH_PX > 0;
+
+  function bindTilt(el) {
+    let raf = null;
+
+    el.addEventListener('pointerenter', () => {
+      el.classList.add('tilting');
+      // only set --tz if Z-push is explicitly enabled to avoid growth/overflow
+      if (USE_Z) el.style.setProperty('--tz', `${Z_PUSH_PX}px`);
+      else el.style.setProperty('--tz', '0px');
+    });
+
+    el.addEventListener('pointermove', (ev) => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const px = (ev.clientX - rect.left) / rect.width;
+        const py = (ev.clientY - rect.top) / rect.height;
+        const nx = (px - 0.5) * 2;
+        const ny = (py - 0.5) * 2;
+        const rotateY = (-nx * MAX_DEG).toFixed(3) + 'deg';
+        const rotateX = (ny * MAX_DEG).toFixed(3) + 'deg';
+        el.style.setProperty('--rx', rotateX);
+        el.style.setProperty('--ry', rotateY);
+      });
+    });
+
+    el.addEventListener('pointerleave', () => {
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      el.classList.remove('tilting');
+      el.style.setProperty('--rx', '0deg');
+      el.style.setProperty('--ry', '0deg');
+      el.style.setProperty('--tz', '0px');
+    });
+
+    el.addEventListener('focus', () => el.classList.add('tilting'));
+    el.addEventListener('blur', () => el.classList.remove('tilting'));
+  }
+
+  function init() {
+    const els = document.querySelectorAll(EL_SELECTOR);
+    els.forEach(bindTilt);
+
+    const obs = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          if (node.matches && node.matches(EL_SELECTOR)) bindTilt(node);
+          node.querySelectorAll && node.querySelectorAll(EL_SELECTOR).forEach(bindTilt);
+        }
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+// ---------- IMAGE / ICON LOADER (new, global) ----------
+/*
+  Finds the first existing image URL from multiple filename variants and sets it on the <img>.
+  Uses fetch HEAD checks so missing files don't create 404 noise in the console.
+  If nothing is found the img is hidden and a tiny data URL is set to avoid broken-src behavior.
+*/
+async function setIconImgSources(img, name) {
+    try {
+        const raw = String(name || "");
+        const bases = [
+            raw,
+            raw.replace(/\//g,'_'),
+            raw.replace(/\//g,''),            // remove slashes
+            raw.replace(/\s+/g,'_')          // spaces -> underscore
+        ].filter(Boolean);
+
+        // construct candidates, include encoded variants
+        const candidates = [];
+        for (const b of bases) {
+            const variants = [`${b}_Logo.png`, `${b}.png`];
+            for (const v of variants) {
+                candidates.push(`media/${v}`);
+                candidates.push(`media/${encodeURIComponent(v)}`);
+            }
+        }
+
+        // dedupe while preserving order
+        const seen = new Set();
+        const uniq = candidates.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
+
+        // try HEAD on each candidate; HEAD won't log 404 to console like setting img.src directly
+        for (const url of uniq) {
+            try {
+                const res = await fetch(url, { method: 'HEAD' });
+                if (res && res.ok) {
+                    img.onerror = () => { img.style.display = "none"; };
+                    img.src = url;
+                    return;
+                }
+            } catch (e) {
+                // ignore network errors and continue trying other variants
+            }
+        }
+
+        // no candidate found -> hide the image (use tiny data URI so there's no broken-src attempt)
+        img.onerror = null;
+        img.style.display = "none";
+        img.src = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+    } catch (e) {
+        // last-resort: hide on unexpected errors
+        try { img.style.display = "none"; } catch {}
+    }
+}
+
+// remove any leftover overlays that might hide content (page-fade / image-overlay)
+function removeTransientOverlays() {
+    try {
+        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
+            if (n && n.parentNode) n.parentNode.removeChild(n);
+        });
+    } catch (e) { /* ignore */ }
+}
+
+// ---------- INIT ----------
+function initPortfolioIfNeeded() {
+    const carouselEl = document.getElementById("carousel");
+    if (!carouselEl) return;
+
+    // remove any stray overlays before we start initializing UI
+    removeTransientOverlays();
+
+    loadPortfolio().then(items => {
+        portfolioItems = items;
+
+        // gather tags from items
+        const allTagsSet = new Set();
+        items.forEach(it => it.tags.forEach(t => allTagsSet.add(t)));
+
+        // create ordered tag list using window.TAG_ORDER preference (same logic as buildTagFilterBar)
+        const preferred = Array.isArray(window.TAG_ORDER) ? window.TAG_ORDER : [];
+        const seen = new Set();
+        const ordered = [];
+        for (const t of preferred) {
+            if (allTagsSet.has(t) && !seen.has(t)) { ordered.push(t); seen.add(t); }
+        }
+        for (const t of allTagsSet) {
+            if (!seen.has(t)) { ordered.push(t); seen.add(t); }
+        }
+
+        // set global ALL_TAGS BEFORE decoding URL so bitmask decoding can map indices
+        ALL_TAGS = Array.from(ordered);
+
+        // read tags from url (obfuscated / compact) and use them if valid
+        const urlTags = readTagsFromUrl().filter(t => allTagsSet.has(t));
+        if (urlTags.length) selectedTags = new Set(urlTags);
+        else selectedTags = new Set([...ALL_TAGS]);
+
+        // Adjust firstTagClick behavior now that selection can come from the URL:
+        if (!ENABLE_FIRST_TAG_CLICK) {
+            firstTagClick = false;
+        } else {
+            firstTagClick = (selectedTags.size !== 1);
+        }
+
+        buildTagFilterBar([...ALL_TAGS]);
+        buildCarousel(items);
+
+        // apply filtering to carousel based on selectedTags (ensures URL-loaded selections actually filter)
+        if (!(selectedTags.size === ALL_TAGS.length && ALL_TAGS.every(t => selectedTags.has(t)))) {
+            rebuildCarousel();
+        }
+
+        // ensure the url reflects the initial selection (helpful when defaulted)
+        updateUrlWithTags(selectedTags);
+
+        // Safety: ensure carousel is visible and any overlays removed after initialization.
+        // Some browsers/histories can restore a cached page-state that leaves overlays or hides content.
+        setTimeout(() => {
+            try {
+                removeTransientOverlays();
+                if (typeof updateCarouselClasses === 'function') updateCarouselClasses(true);
+                const c = document.getElementById('carousel');
+                if (c) { c.style.visibility = ''; c.style.opacity = ''; }
+            } catch (e) { /* ignore */ }
+        }, 80);
+    }).catch(err => {
+        // don't let failures here leave the page blank
+        console.error('initPortfolioIfNeeded error', err);
+        // ensure overlays removed so user still sees content
+        removeTransientOverlays();
+        const c = document.getElementById('carousel');
+        if (c) { c.style.visibility = ''; c.style.opacity = ''; }
+    });
+}
+
+// Run on DOM ready (handles first-load and navigations from history/bfcache)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPortfolioIfNeeded, { once: true });
+} else {
+    initPortfolioIfNeeded();
+}
+
+// ensure UI re-initializes when page is restored from bfcache (back/forward navigation)
+window.addEventListener('pageshow', (ev) => {
+    try {
+        // remove any overlays restored with the page
+        removeTransientOverlays();
+        // Re-run initialization logic which is safe (it will early-return if #carousel is missing)
+        initPortfolioIfNeeded();
+    } catch (e) { /* ignore */ }
+});
 
 // small accessibility: mouse wheel rotates carousel
 document.addEventListener("wheel", e => {
