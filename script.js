@@ -38,7 +38,7 @@ const TILT_SELECTOR = '.media';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-// simple obfuscation: XOR with key then base64 (kept for fallback / older links)
+// --- URL tag encoding (small obfuscation: XOR + base64) ---
 function _xorBase64Encode(str, key = 'ivb-2025') {
     const chars = [];
     for (let i = 0; i < str.length; i++) chars.push(String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length)));
@@ -50,96 +50,36 @@ function _xorBase64Decode(enc, key = 'ivb-2025') {
         let out = '';
         for (let i = 0; i < bin.length; i++) out += String.fromCharCode(bin.charCodeAt(i) ^ key.charCodeAt(i % key.length));
         return out;
-    } catch (e) {
-        return null;
-    }
+    } catch (e) { return null; }
 }
-
-// encode tags into a compact param. Two formats supported:
-//  - 'b:' bitmask (preferred, compact and stable length per number of tags)
-//  - 'x:' xor+base64 JSON (fallback / legacy)
 function encodeTagsToParam(tagArray) {
-    try {
-        const arr = Array.isArray(tagArray) ? tagArray : Array.from(tagArray || []);
-        if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
-            const n = ALL_TAGS.length;
-            const bytes = new Uint8Array(Math.ceil(n / 8));
-            for (const t of arr) {
-                const idx = ALL_TAGS.indexOf(t);
-                if (idx >= 0) bytes[Math.floor(idx / 8)] |= (1 << (idx % 8));
-            }
-            // convert bytes -> binary string for btoa
-            let bin = "";
-            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-            return 'b:' + btoa(bin);
-        }
-        // fallback: xor+base64 JSON with explicit prefix
-        return 'x:' + _xorBase64Encode(JSON.stringify(arr));
-    } catch (e) { return ''; }
+    try { return _xorBase64Encode(JSON.stringify(Array.from(tagArray || []))); }
+    catch (e) { return ''; }
 }
-
 function decodeTagsFromParam(param) {
     try {
-        if (!param) return [];
-        // prefixed bitmask
-        if (param.startsWith('b:')) {
-            const b64 = param.slice(2);
-            let bin;
-            try { bin = atob(b64); } catch (e) { return []; }
-            const bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            const out = [];
-            if (!Array.isArray(ALL_TAGS) || ALL_TAGS.length === 0) return [];
-            for (let i = 0; i < ALL_TAGS.length; i++) {
-                const byte = bytes[Math.floor(i / 8)] || 0;
-                const bit = (byte >> (i % 8)) & 1;
-                if (bit) out.push(ALL_TAGS[i]);
-            }
-            return out;
-        }
-        // prefixed xor/json (legacy)
-        if (param.startsWith('x:')) {
-            const payload = param.slice(2);
-            const txt = _xorBase64Decode(payload);
-            if (!txt) return [];
-            const arr = JSON.parse(txt);
-            return Array.isArray(arr) ? arr.map(String) : [];
-        }
-        // unknown format: try legacy xor decode first (backwards compat)
-        const maybeTxt = _xorBase64Decode(param);
-        if (maybeTxt) {
-            try {
-                const arr = JSON.parse(maybeTxt);
-                if (Array.isArray(arr)) return arr.map(String);
-            } catch (e) { /* ignore */ }
-        }
-        return [];
+        const txt = _xorBase64Decode(param);
+        if (!txt) return [];
+        const arr = JSON.parse(txt);
+        return Array.isArray(arr) ? arr.map(String) : [];
     } catch (e) { return []; }
 }
-
 function updateUrlWithTags(tagsSet) {
     try {
         const url = new URL(window.location.href);
         const arr = Array.from(tagsSet || []);
-        // if ALL_TAGS defined and selection equals all tags, remove param (default state)
+        // if ALL_TAGS is defined and selection equals all tags -> remove param (default)
         if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
             const allSelected = (arr.length === ALL_TAGS.length) && ALL_TAGS.every(t => tagsSet.has(t));
-            if (allSelected) {
-                url.searchParams.delete('t');
-                history.replaceState(null, '', url.toString());
-                return;
-            }
+            if (allSelected) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
         } else {
-            // if no ALL_TAGS context and no tags selected, remove param
             if (!arr.length) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
         }
-        const encoded = encodeTagsToParam(arr);
-        if (!encoded) url.searchParams.delete('t');
-        else url.searchParams.set('t', encoded);
+        const enc = encodeTagsToParam(arr);
+        if (!enc) url.searchParams.delete('t'); else url.searchParams.set('t', enc);
         history.replaceState(null, '', url.toString());
     } catch (e) { /* ignore */ }
 }
-
 function readTagsFromUrl() {
     try {
         const url = new URL(window.location.href);
@@ -563,7 +503,7 @@ function buildTagFilterBar(allTags) {
                 Array.from(filter.children).forEach(ch => ch.dataset && ch.dataset.tag === tag ? ch.classList.add("selected") : ch.classList.remove("selected"));
                 firstTagClick = false;
                 rebuildCarousel();
-                updateUrlWithTags(selectedTags); // update URL
+                updateUrlWithTags(selectedTags); // <-- update URL here
                 return;
             }
             const tentative = new Set(selectedTags);
@@ -585,7 +525,7 @@ function buildTagFilterBar(allTags) {
             if (!remaining.length) { btn.classList.add("cannot-unselect"); setTimeout(() => btn.classList.remove("cannot-unselect"), 700); return; }
             if (selectedTags.has(tag)) { selectedTags.delete(tag); btn.classList.remove("selected"); } else { selectedTags.add(tag); btn.classList.add("selected"); }
             rebuildCarousel();
-            updateUrlWithTags(selectedTags); // update URL after change
+            updateUrlWithTags(selectedTags); // <-- and here
         };
 
         // ensure mouse clicks blur the button so :focus CSS doesn't keep text visible;
@@ -689,349 +629,28 @@ if (ENABLE_PAGE_FADE) {
 }
 
 // ---------- INIT ----------
-// Move the init logic into a function and ensure it runs after DOM is ready.
-// This avoids a race where the script executes before the #carousel element exists
-// (which would skip initialization and cause the blank-on-first-load symptom).
-function initPortfolioIfNeeded() {
-    const carouselEl = document.getElementById("carousel");
-    if (!carouselEl) return;
-
-    // remove overlays and restore UI chrome before init
-    restoreUIState();
-
+if (document.getElementById("carousel")) {
     loadPortfolio().then(items => {
         portfolioItems = items;
+        const allTags = new Set();
+        items.forEach(it => it.tags.forEach(t => allTags.add(t)));
 
-        // gather tags from items
-        const allTagsSet = new Set();
-        items.forEach(it => it.tags.forEach(t => allTagsSet.add(t)));
+        // read tags from url (obfuscated) and use them if valid
+        const urlTags = readTagsFromUrl().filter(t => allTags.has(t));
 
-        // create ordered tag list using window.TAG_ORDER preference (same logic as buildTagFilterBar)
-        const preferred = Array.isArray(window.TAG_ORDER) ? window.TAG_ORDER : [];
-        const seen = new Set();
-        const ordered = [];
-        for (const t of preferred) {
-            if (allTagsSet.has(t) && !seen.has(t)) { ordered.push(t); seen.add(t); }
-        }
-        for (const t of allTagsSet) {
-            if (!seen.has(t)) { ordered.push(t); seen.add(t); }
-        }
-
-        // set global ALL_TAGS BEFORE decoding URL so bitmask decoding can map indices
-        ALL_TAGS = Array.from(ordered);
-
-        // read tags from url (obfuscated / compact) and use them if valid
-        const urlTags = readTagsFromUrl().filter(t => allTagsSet.has(t));
         if (urlTags.length) selectedTags = new Set(urlTags);
-        else selectedTags = new Set([...ALL_TAGS]);
+        else selectedTags = new Set([...allTags]);
 
         // Adjust firstTagClick behavior now that selection can come from the URL:
-        if (!ENABLE_FIRST_TAG_CLICK) {
-            firstTagClick = false;
-        } else {
-            firstTagClick = (selectedTags.size !== 1);
-        }
+        // - enable special first-click narrowing if multiple tags selected
+        if (!ENABLE_FIRST_TAG_CLICK) firstTagClick = false;
+        else firstTagClick = (selectedTags.size !== 1);
 
-        buildTagFilterBar([...ALL_TAGS]);
+        buildTagFilterBar([...allTags]);
         buildCarousel(items);
 
-        // apply filtering to carousel based on selectedTags (ensures URL-loaded selections actually filter)
-        if (!(selectedTags.size === ALL_TAGS.length && ALL_TAGS.every(t => selectedTags.has(t)))) {
-            rebuildCarousel();
-        }
-
-        // ensure the url reflects the initial selection (helpful when defaulted)
+        // ensure the url reflects the initial selection (remove param if all selected)
         updateUrlWithTags(selectedTags);
-
-        // Safety: ensure carousel is visible and any overlays removed after initialization.
-        // Some browsers/histories can restore a cached page-state that leaves overlays or hides content.
-        setTimeout(() => {
-            try {
-                removeTransientOverlays();
-                if (typeof updateCarouselClasses === 'function') updateCarouselClasses(true);
-                const c = document.getElementById('carousel');
-                if (c) { c.style.visibility = ''; c.style.opacity = ''; }
-            } catch (e) { /* ignore */ }
-        }, 80);
-    }).catch(err => {
-        // don't let failures here leave the page blank
-        console.error('initPortfolioIfNeeded error', err);
-        // ensure overlays removed so user still sees content
-        removeTransientOverlays();
-        const c = document.getElementById('carousel');
-        if (c) { c.style.visibility = ''; c.style.opacity = ''; }
-    });
-}
-
-// Run on DOM ready (handles first-load and navigations from history/bfcache)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPortfolioIfNeeded, { once: true });
-} else {
-    initPortfolioIfNeeded();
-}
-
-// ensure UI re-initializes when page is restored from bfcache (back/forward navigation)
-window.addEventListener('pageshow', (ev) => {
-    try {
-        // restore UI and re-run initialization (safe)
-        restoreUIState();
-        initPortfolioIfNeeded();
-    } catch (e) { /* ignore */ }
-});
-
-// small accessibility: mouse wheel rotates carousel
-document.addEventListener("wheel", e => {
-    if (Math.abs(e.deltaY) < 10) return;
-    const steps = Math.min(2, Math.max(1, Math.round(Math.abs(e.deltaY) / 180)));
-    enqueueSteps((e.deltaY > 0 ? 1 : -1) * steps);
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// pointer-based 3D tilt for elements with class "media"
-(function () {
-  if (!ENABLE_TILT) return; // allow global disable
-
-  const EL_SELECTOR = TILT_SELECTOR;
-  const MAX_DEG = TILT_DEG;
-  const Z_PUSH_PX = Number(Z_PUSH) || 0;
-  const USE_Z = Boolean(ENABLE_Z_PUSH) && Z_PUSH_PX > 0;
-
-  function bindTilt(el) {
-    let raf = null;
-
-    el.addEventListener('pointerenter', () => {
-      el.classList.add('tilting');
-      // only set --tz if Z-push is explicitly enabled to avoid growth/overflow
-      if (USE_Z) el.style.setProperty('--tz', `${Z_PUSH_PX}px`);
-      else el.style.setProperty('--tz', '0px');
-    });
-
-    el.addEventListener('pointermove', (ev) => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const rect = el.getBoundingClientRect();
-        const px = (ev.clientX - rect.left) / rect.width;
-        const py = (ev.clientY - rect.top) / rect.height;
-        const nx = (px - 0.5) * 2;
-        const ny = (py - 0.5) * 2;
-        const rotateY = (-nx * MAX_DEG).toFixed(3) + 'deg';
-        const rotateX = (ny * MAX_DEG).toFixed(3) + 'deg';
-        el.style.setProperty('--rx', rotateX);
-        el.style.setProperty('--ry', rotateY);
-      });
-    });
-
-    el.addEventListener('pointerleave', () => {
-      if (raf) { cancelAnimationFrame(raf); raf = null; }
-      el.classList.remove('tilting');
-      el.style.setProperty('--rx', '0deg');
-      el.style.setProperty('--ry', '0deg');
-      el.style.setProperty('--tz', '0px');
-    });
-
-    el.addEventListener('focus', () => el.classList.add('tilting'));
-    el.addEventListener('blur', () => el.classList.remove('tilting'));
-  }
-
-  function init() {
-    const els = document.querySelectorAll(EL_SELECTOR);
-    els.forEach(bindTilt);
-
-    const obs = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        for (const node of m.addedNodes) {
-          if (!(node instanceof Element)) continue;
-          if (node.matches && node.matches(EL_SELECTOR)) bindTilt(node);
-          node.querySelectorAll && node.querySelectorAll(EL_SELECTOR).forEach(bindTilt);
-        }
-      }
-    });
-    obs.observe(document.body, { childList: true, subtree: true });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
-
-// ---------- IMAGE / ICON LOADER (new, global) ----------
-/*
-  Finds the first existing image URL from multiple filename variants and sets it on the <img>.
-  Uses fetch HEAD checks so missing files don't create 404 noise in the console.
-  If nothing is found the img is hidden and a tiny data URL is set to avoid broken-src behavior.
-*/
-async function setIconImgSources(img, name) {
-    try {
-        const raw = String(name || "");
-        const bases = [
-            raw,
-            raw.replace(/\//g,'_'),
-            raw.replace(/\//g,''),            // remove slashes
-            raw.replace(/\s+/g,'_')          // spaces -> underscore
-        ].filter(Boolean);
-
-        // construct candidates, include encoded variants
-        const candidates = [];
-        for (const b of bases) {
-            const variants = [`${b}_Logo.png`, `${b}.png`];
-            for (const v of variants) {
-                candidates.push(`media/${v}`);
-                candidates.push(`media/${encodeURIComponent(v)}`);
-            }
-        }
-
-        // dedupe while preserving order
-        const seen = new Set();
-        const uniq = candidates.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
-
-        // try HEAD on each candidate; HEAD won't log 404 to console like setting img.src directly
-        for (const url of uniq) {
-            try {
-                const res = await fetch(url, { method: 'HEAD' });
-                if (res && res.ok) {
-                    img.onerror = () => { img.style.display = "none"; };
-                    img.src = url;
-                    return;
-                }
-            } catch (e) {
-                // ignore network errors and continue trying other variants
-            }
-        }
-
-        // no candidate found -> hide the image (use tiny data URI so there's no broken-src attempt)
-        img.onerror = null;
-        img.style.display = "none";
-        img.src = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
-    } catch (e) {
-        // last-resort: hide on unexpected errors
-        try { img.style.display = "none"; } catch {}
-    }
-}
-
-// remove any leftover overlays that might hide content (page-fade / image-overlay)
-function removeTransientOverlays() {
-    try {
-        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
-            if (n && n.parentNode) n.parentNode.removeChild(n);
-        });
-    } catch (e) { /* ignore */ }
-}
-
-// restore any inline transition/transform/opacity that may hide UI chrome after navigation
-function restoreUIState() {
-    try {
-        removeTransientOverlays();
-        // restore top/bottom bars
-        ['.top-bar', '.bottom-bar'].forEach(sel => {
-            const el = document.querySelector(sel);
-            if (el) {
-                el.style.transition = '';
-                el.style.transform = '';
-                el.style.opacity = '';
-            }
-        });
-        // restore carousel and its items
-        const carousel = document.getElementById('carousel');
-        if (carousel) {
-            carousel.style.pointerEvents = '';
-            carousel.style.visibility = '';
-            carousel.style.opacity = '';
-        }
-        // restore body overflow (in case overlays set it)
-        document.body.style.overflow = '';
-    } catch (e) { /* ignore */ }
-}
-
-// ---------- INIT ----------
-function initPortfolioIfNeeded() {
-    const carouselEl = document.getElementById("carousel");
-    if (!carouselEl) return;
-
-    // remove overlays and restore UI chrome before init
-    restoreUIState();
-
-    loadPortfolio().then(items => {
-        portfolioItems = items;
-
-        // gather tags from items
-        const allTagsSet = new Set();
-        items.forEach(it => it.tags.forEach(t => allTagsSet.add(t)));
-
-        // create ordered tag list using window.TAG_ORDER preference (same code as in buildTagFilterBar)
-        const preferred = Array.isArray(window.TAG_ORDER) ? window.TAG_ORDER : [];
-        const seen = new Set();
-        const ordered = [];
-        // add preferred tags in order if they exist in allTags
-        for (const t of preferred) {
-            if (allTagsSet.has(t) && !seen.has(t)) { ordered.push(t); seen.add(t); }
-        }
-        // append remaining tags in the provided order
-        for (const t of allTagsSet) {
-            if (!seen.has(t)) { ordered.push(t); seen.add(t); }
-        }
-
-        // set global ALL_TAGS BEFORE decoding URL so bitmask decoding can map indices
-        ALL_TAGS = Array.from(ordered);
-
-        // read tags from url (obfuscated / compact) and use them if valid
-        const urlTags = readTagsFromUrl().filter(t => allTagsSet.has(t));
-        if (urlTags.length) selectedTags = new Set(urlTags);
-        else selectedTags = new Set([...ALL_TAGS]);
-
-        // Adjust firstTagClick behavior now that selection can come from the URL:
-        if (!ENABLE_FIRST_TAG_CLICK) {
-            firstTagClick = false;
-        } else {
-            firstTagClick = (selectedTags.size !== 1);
-        }
-
-        buildTagFilterBar([...ALL_TAGS]);
-        buildCarousel(items);
-
-        // apply filtering to carousel based on selectedTags (ensures URL-loaded selections actually filter)
-        if (!(selectedTags.size === ALL_TAGS.length && ALL_TAGS.every(t => selectedTags.has(t)))) {
-            rebuildCarousel();
-        }
-
-        // ensure the url reflects the initial selection (helpful when defaulted)
-        updateUrlWithTags(selectedTags);
-
-        // Safety: ensure carousel is visible and any overlays removed after initialization.
-        // Some browsers/histories can restore a cached page-state that leaves overlays or hides content.
-        setTimeout(() => {
-            try {
-                removeTransientOverlays();
-                if (typeof updateCarouselClasses === 'function') updateCarouselClasses(true);
-                const c = document.getElementById('carousel');
-                if (c) { c.style.visibility = ''; c.style.opacity = ''; }
-            } catch (e) { /* ignore */ }
-        }, 80);
-    }).catch(err => {
-        // don't let failures here leave the page blank
-        console.error('initPortfolioIfNeeded error', err);
-        // ensure overlays removed so user still sees content
-        removeTransientOverlays();
-        const c = document.getElementById('carousel');
-        if (c) { c.style.visibility = ''; c.style.opacity = ''; }
     });
 }
 
