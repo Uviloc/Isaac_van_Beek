@@ -689,7 +689,13 @@ if (ENABLE_PAGE_FADE) {
 }
 
 // ---------- INIT ----------
-if (document.getElementById("carousel")) {
+// Move the init logic into a function and ensure it runs after DOM is ready.
+// This avoids a race where the script executes before the #carousel element exists
+// (which would skip initialization and cause the blank-on-first-load symptom).
+function initPortfolioIfNeeded() {
+    const carouselEl = document.getElementById("carousel");
+    if (!carouselEl) return;
+
     loadPortfolio().then(items => {
         portfolioItems = items;
 
@@ -717,11 +723,6 @@ if (document.getElementById("carousel")) {
         else selectedTags = new Set([...ALL_TAGS]);
 
         // Adjust firstTagClick behavior now that selection can come from the URL:
-        // - keep the "first-click narrows to single tag" behaviour active when there are multiple
-        //   tags selected (including the default "all tags" state).
-        // - disable the special first-click behaviour when exactly one tag is already selected
-        //   (so clicks act as normal toggles).
-        // - respect the global ENABLE_FIRST_TAG_CLICK toggle.
         if (!ENABLE_FIRST_TAG_CLICK) {
             firstTagClick = false;
         } else {
@@ -732,14 +733,23 @@ if (document.getElementById("carousel")) {
         buildCarousel(items);
 
         // apply filtering to carousel based on selectedTags (ensures URL-loaded selections actually filter)
-        // only run rebuild if not all tags are selected (no-op otherwise)
         if (!(selectedTags.size === ALL_TAGS.length && ALL_TAGS.every(t => selectedTags.has(t)))) {
             rebuildCarousel();
         }
 
         // ensure the url reflects the initial selection (helpful when defaulted)
         updateUrlWithTags(selectedTags);
+    }).catch(err => {
+        // don't let failures here leave the page blank
+        console.error('initPortfolioIfNeeded error', err);
     });
+}
+
+// Run on DOM ready (handles first-load and navigations from history/bfcache)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPortfolioIfNeeded, { once: true });
+} else {
+    initPortfolioIfNeeded();
 }
 
 // small accessibility: mouse wheel rotates carousel
