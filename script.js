@@ -905,3 +905,15 @@ async function setIconImgSources(img, name) {
         try { img.style.display = "none"; } catch {}
     }
 }
+
+
+
+
+
+
+
+window.addEventListener('pageshow', function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
