@@ -627,8 +627,11 @@ if (ENABLE_PAGE_FADE) {
     }, { once: true });
 }
 
-// ---------- INIT ----------
-if (document.getElementById("carousel")) {
+// ---------- INIT (moved into a safe function to avoid timing races) ----------
+function initPortfolioIfNeeded() {
+    const carouselEl = document.getElementById("carousel");
+    if (!carouselEl) return;
+
     loadPortfolio().then(items => {
         portfolioItems = items;
         const allTags = new Set();
@@ -641,7 +644,8 @@ if (document.getElementById("carousel")) {
         else selectedTags = new Set([...allTags]);
 
         // Adjust firstTagClick behavior now that selection can come from the URL:
-        // - enable special first-click narrowing if multiple tags selected
+        // - enable special first-click narrowing when there are multiple selected tags
+        // - disable it when exactly one tag is already selected
         if (!ENABLE_FIRST_TAG_CLICK) firstTagClick = false;
         else firstTagClick = (selectedTags.size !== 1);
 
@@ -650,8 +654,22 @@ if (document.getElementById("carousel")) {
 
         // ensure the url reflects the initial selection (remove param if all selected)
         updateUrlWithTags(selectedTags);
+    }).catch(err => {
+        console.error('initPortfolioIfNeeded error', err);
     });
 }
+
+// run init safely on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPortfolioIfNeeded, { once: true });
+} else {
+    initPortfolioIfNeeded();
+}
+
+// re-run init when page is shown from bfcache (handles back navigation / restored state)
+window.addEventListener('pageshow', (ev) => {
+    try { initPortfolioIfNeeded(); } catch (e) { /* ignore */ }
+});
 
 // small accessibility: mouse wheel rotates carousel
 document.addEventListener("wheel", e => {
