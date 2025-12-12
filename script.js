@@ -12,10 +12,8 @@ const PAGE_FADE_EASE = PAGE_ANIM_EASE;
 // track first-tag-click behaviour (used by buildTagFilterBar)
 let firstTagClick = true;
 
-
-
-
-
+// repository prefix used on GitHub Pages (adjust if your repo name changes)
+const REPO_PREFIX = '/Isaac_van_Beek';
 
 // ---------- TILT CONFIG (editable) ----------
 /*
