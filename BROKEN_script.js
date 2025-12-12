@@ -1,3 +1,6 @@
+console.log("WRONG SCRIPT");
+
+
 // ---------- CONFIG / TOGGLES (tweak here) ----------
 const ENABLE_FIRST_TAG_CLICK = true;
 const RESELECT_ALL_WHEN_EMPTY = true;

@@ -77,6 +77,7 @@ async function loadPortfolio() {
             description: nl2brFromMeta(rawDesc), // HTML-safe with <br> for display
             thumbnail: meta("thumbnail") || "",
             color: meta("color") || "",
+            date: meta("date") || "",
             tags: (meta("tags") || "").split(",").map(t => t.trim()).filter(Boolean)
         });
     }
@@ -189,10 +190,15 @@ function createCarouselElement(item, idx) {
     }).join("");
 
     el.innerHTML = `
-        <h2>${item.title}</h2>
-        <div class="item-tags">${tagsHtml}</div>
-        <img class="media" src="${item.thumbnail}" alt="${item.title} thumbnail">
-        <p>${item.description}</p>
+        <div class:"item-section">
+            <h2>${item.title}</h2>
+            <div class="item-tags">${tagsHtml}</div>
+        </div>
+        <div class:"item-section">
+            <img class="media" src="${item.thumbnail}" alt="${item.title} thumbnail">
+            <p class="item-description">${item.description}</p>
+        </div>
+        <p class="item-date">${escapeHtml(item.date || "")}</p>
     `;
 
     // after insertion, set up icons properly (so onerror fallback works)
