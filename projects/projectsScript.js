@@ -3,6 +3,9 @@ const ENABLE_PAGE_FADE = true;
 const PROJECT_PAGE_FADE_DURATION_MS = 480;
 const PROJECT_PAGE_FADE_EASE = 'cubic-bezier(.4,.5,.8,1)';
 
+// convenience: repo folder used on GitHub Pages (adjust if your GH repo name changes)
+const REPO_PREFIX = '/Isaac_van_Beek';
+
 
 
 
@@ -45,51 +48,55 @@ async function setIconImgSources(img, name) {
             raw.replace(/\s+/g,'_')           // spaces -> underscore
         ].filter(Boolean);
 
-        // generate candidate urls that cover both GH-Pages hosting (repo prefix) and local/live-server roots.
-        const candidates = [];
+        // build filename variants
+        const filenameVariants = [];
         for (const b of bases) {
-            const variants = [`${b}_Logo.png`, `${b}.png`];
+            filenameVariants.push(`${b}_Logo.png`);
+            filenameVariants.push(`${b}.png`);
+            filenameVariants.push(encodeURIComponent(`${b}_Logo.png`));
+            filenameVariants.push(encodeURIComponent(`${b}.png`));
+        }
 
-            for (const v of variants) {
-                // absolute on GH Pages (repo in path) and absolute at site root
-                candidates.push(`${REPO_PREFIX}/media/${v}`);
-                candidates.push(`/media/${v}`);
+        // candidate path prefixes that cover both GH-Pages (repo prefix) and local / varied depths
+        const prefixes = [
+            `${REPO_PREFIX}/media/`,
+            `/media/`,
+            `media/`,
+            `./media/`,
+            `../media/`,
+            `../../media/`,
+            `../../../media/`
+        ];
 
-                // relative variants (useful from /projects/ pages and local servers)
-                candidates.push(`../media/${v}`);
-                candidates.push(`./media/${v}`);
-                candidates.push(`media/${v}`);
-
-                // encoded variant for safety
-                candidates.push(`${REPO_PREFIX}/media/${encodeURIComponent(v)}`);
-                candidates.push(`/media/${encodeURIComponent(v)}`);
+        // create candidates (preserve order), dedupe
+        const seen = new Set();
+        const candidates = [];
+        for (const p of prefixes) {
+            for (const f of filenameVariants) {
+                const u = p + f;
+                if (!seen.has(u)) { seen.add(u); candidates.push(u); }
             }
         }
 
-        // dedupe while preserving order
-        const seen = new Set();
-        const uniq = candidates.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
-
-        for (const url of uniq) {
+        // try HEAD first (less noisy), fall back to Image load if HEAD fails due to CORS/file
+        for (const url of candidates) {
             try {
-                // use HEAD when supported; if HEAD fails (CORS/file), try GET with small timeout
                 const res = await fetch(url, { method: 'HEAD' });
-                if (res && res.ok) {
+                if (res && res.ok) { img.onerror = () => { img.style.display = "none"; }; img.src = url; return; }
+            } catch (e) {
+                try {
+                    // HEAD failed - try a quick Image load as fallback (some servers block HEAD)
+                    await new Promise((resolve, reject) => {
+                        const tester = new Image();
+                        tester.onload = () => resolve();
+                        tester.onerror = () => reject();
+                        tester.src = url;
+                    });
                     img.onerror = () => { img.style.display = "none"; };
                     img.src = url;
                     return;
-                }
-            } catch (e) {
-                // HEAD may fail due to CORS or file://; attempt a lightweight GET as fallback
-                try {
-                    const res2 = await fetch(url, { method: 'GET' });
-                    if (res2 && res2.ok) {
-                        img.onerror = () => { img.style.display = "none"; };
-                        img.src = url;
-                        return;
-                    }
                 } catch (e2) {
-                    // ignore and try next candidate
+                    // continue to next candidate
                 }
             }
         }
