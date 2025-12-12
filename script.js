@@ -40,6 +40,57 @@ const TILT_SELECTOR = '.media';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+// --- URL tag encoding (small obfuscation: XOR + base64) ---
+function _xorBase64Encode(str, key = 'ivb-2025') {
+    const chars = [];
+    for (let i = 0; i < str.length; i++) chars.push(String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length)));
+    return btoa(chars.join(''));
+}
+function _xorBase64Decode(enc, key = 'ivb-2025') {
+    try {
+        const bin = atob(enc);
+        let out = '';
+        for (let i = 0; i < bin.length; i++) out += String.fromCharCode(bin.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        return out;
+    } catch (e) { return null; }
+}
+function encodeTagsToParam(tagArray) {
+    try { return _xorBase64Encode(JSON.stringify(Array.from(tagArray || []))); }
+    catch (e) { return ''; }
+}
+function decodeTagsFromParam(param) {
+    try {
+        const txt = _xorBase64Decode(param);
+        if (!txt) return [];
+        const arr = JSON.parse(txt);
+        return Array.isArray(arr) ? arr.map(String) : [];
+    } catch (e) { return []; }
+}
+function updateUrlWithTags(tagsSet) {
+    try {
+        const url = new URL(window.location.href);
+        const arr = Array.from(tagsSet || []);
+        // if ALL_TAGS is defined and selection equals all tags -> remove param (default)
+        if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
+            const allSelected = (arr.length === ALL_TAGS.length) && ALL_TAGS.every(t => tagsSet.has(t));
+            if (allSelected) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
+        } else {
+            if (!arr.length) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
+        }
+        const enc = encodeTagsToParam(arr);
+        if (!enc) url.searchParams.delete('t'); else url.searchParams.set('t', enc);
+        history.replaceState(null, '', url.toString());
+    } catch (e) { /* ignore */ }
+}
+function readTagsFromUrl() {
+    try {
+        const url = new URL(window.location.href);
+        const p = url.searchParams.get('t');
+        if (!p) return [];
+        return decodeTagsFromParam(p);
+    } catch (e) { return []; }
+}
+
 // convert plain text to safe HTML preserving line breaks from meta descriptions
 function escapeHtml(str) {
     return String(str || '')
@@ -451,6 +502,7 @@ function buildTagFilterBar(allTags) {
                 Array.from(filter.children).forEach(ch => ch.dataset && ch.dataset.tag === tag ? ch.classList.add("selected") : ch.classList.remove("selected"));
                 firstTagClick = false;
                 rebuildCarousel();
+                updateUrlWithTags(selectedTags); // <-- update URL here
                 return;
             }
             const tentative = new Set(selectedTags);
@@ -461,6 +513,7 @@ function buildTagFilterBar(allTags) {
                     Array.from(filter.children).forEach(ch => ch.classList.add("selected"));
                     firstTagClick = !!ENABLE_FIRST_TAG_CLICK;
                     rebuildCarousel();
+                    updateUrlWithTags(selectedTags);
                     return;
                 }
                 btn.classList.add("cannot-unselect");
@@ -471,6 +524,7 @@ function buildTagFilterBar(allTags) {
             if (!remaining.length) { btn.classList.add("cannot-unselect"); setTimeout(() => btn.classList.remove("cannot-unselect"), 700); return; }
             if (selectedTags.has(tag)) { selectedTags.delete(tag); btn.classList.remove("selected"); } else { selectedTags.add(tag); btn.classList.add("selected"); }
             rebuildCarousel();
+            updateUrlWithTags(selectedTags); // <-- and here
         };
 
         // ensure mouse clicks blur the button so :focus CSS doesn't keep text visible;
@@ -579,9 +633,23 @@ if (document.getElementById("carousel")) {
         portfolioItems = items;
         const allTags = new Set();
         items.forEach(it => it.tags.forEach(t => allTags.add(t)));
-        selectedTags = new Set([...allTags]);
+
+        // read tags from url (obfuscated) and use them if valid
+        const urlTags = readTagsFromUrl().filter(t => allTags.has(t));
+
+        if (urlTags.length) selectedTags = new Set(urlTags);
+        else selectedTags = new Set([...allTags]);
+
+        // Adjust firstTagClick behavior now that selection can come from the URL:
+        // - enable special first-click narrowing if multiple tags selected
+        if (!ENABLE_FIRST_TAG_CLICK) firstTagClick = false;
+        else firstTagClick = (selectedTags.size !== 1);
+
         buildTagFilterBar([...allTags]);
         buildCarousel(items);
+
+        // ensure the url reflects the initial selection (remove param if all selected)
+        updateUrlWithTags(selectedTags);
     });
 }
 
