@@ -12,8 +12,10 @@ const PAGE_FADE_EASE = PAGE_ANIM_EASE;
 // track first-tag-click behaviour (used by buildTagFilterBar)
 let firstTagClick = true;
 
-// repository prefix used on GitHub Pages (adjust if your repo name changes)
-const REPO_PREFIX = '/Isaac_van_Beek';
+
+
+
+
 
 // ---------- TILT CONFIG (editable) ----------
 /*
@@ -37,57 +39,6 @@ const TILT_SELECTOR = '.media';
 // ---------- SMALL HELPERS ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-// --- URL tag encoding (small obfuscation: XOR + base64) ---
-function _xorBase64Encode(str, key = 'ivb-2025') {
-    const chars = [];
-    for (let i = 0; i < str.length; i++) chars.push(String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length)));
-    return btoa(chars.join(''));
-}
-function _xorBase64Decode(enc, key = 'ivb-2025') {
-    try {
-        const bin = atob(enc);
-        let out = '';
-        for (let i = 0; i < bin.length; i++) out += String.fromCharCode(bin.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-        return out;
-    } catch (e) { return null; }
-}
-function encodeTagsToParam(tagArray) {
-    try { return _xorBase64Encode(JSON.stringify(Array.from(tagArray || []))); }
-    catch (e) { return ''; }
-}
-function decodeTagsFromParam(param) {
-    try {
-        const txt = _xorBase64Decode(param);
-        if (!txt) return [];
-        const arr = JSON.parse(txt);
-        return Array.isArray(arr) ? arr.map(String) : [];
-    } catch (e) { return []; }
-}
-function updateUrlWithTags(tagsSet) {
-    try {
-        const url = new URL(window.location.href);
-        const arr = Array.from(tagsSet || []);
-        // if ALL_TAGS is defined and selection equals all tags -> remove param (default)
-        if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
-            const allSelected = (arr.length === ALL_TAGS.length) && ALL_TAGS.every(t => tagsSet.has(t));
-            if (allSelected) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
-        } else {
-            if (!arr.length) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
-        }
-        const enc = encodeTagsToParam(arr);
-        if (!enc) url.searchParams.delete('t'); else url.searchParams.set('t', enc);
-        history.replaceState(null, '', url.toString());
-    } catch (e) { /* ignore */ }
-}
-function readTagsFromUrl() {
-    try {
-        const url = new URL(window.location.href);
-        const p = url.searchParams.get('t');
-        if (!p) return [];
-        return decodeTagsFromParam(p);
-    } catch (e) { return []; }
-}
 
 // convert plain text to safe HTML preserving line breaks from meta descriptions
 function escapeHtml(str) {
@@ -126,7 +77,6 @@ async function loadPortfolio() {
             description: nl2brFromMeta(rawDesc), // HTML-safe with <br> for display
             thumbnail: meta("thumbnail") || "",
             color: meta("color") || "",
-            date: meta("date") || "",                     // <-- added date field
             tags: (meta("tags") || "").split(",").map(t => t.trim()).filter(Boolean)
         });
     }
@@ -181,13 +131,10 @@ async function processMoveQueue() {
 function formatColorForRadial(color) {
     if (!color) return "";
     const v = String(color).trim().replace(/\s*;$/,'');
-
     // if it's already a gradient (radial or linear) return as-is
     if (/^\s*(radial-gradient|linear-gradient)\s*\(/i.test(v)) return v;
-
     // multiple comma separated values -> use them as stops inside a radial gradient
     if (v.includes(',')) return `radial-gradient(circle at 50% 10%, ${v})`;
-
     // single color -> create a gentle radial using the color and a faint outer fade
     return `radial-gradient(${v}, rgb(0,0,0))`;
 }
@@ -242,15 +189,10 @@ function createCarouselElement(item, idx) {
     }).join("");
 
     el.innerHTML = `
-        <div class:"item-section">
-            <h2>${item.title}</h2>
-            <div class="item-tags">${tagsHtml}</div>
-        </div>
-        <div class:"item-section">
-            <img class="media" src="${item.thumbnail}" alt="${item.title} thumbnail">
-            <p class="item-description">${item.description}</p>
-        </div>
-        <p class="item-date">${escapeHtml(item.date || "")}</p>
+        <h2>${item.title}</h2>
+        <div class="item-tags">${tagsHtml}</div>
+        <img class="media" src="${item.thumbnail}" alt="${item.title} thumbnail">
+        <p>${item.description}</p>
     `;
 
     // after insertion, set up icons properly (so onerror fallback works)
@@ -503,7 +445,6 @@ function buildTagFilterBar(allTags) {
                 Array.from(filter.children).forEach(ch => ch.dataset && ch.dataset.tag === tag ? ch.classList.add("selected") : ch.classList.remove("selected"));
                 firstTagClick = false;
                 rebuildCarousel();
-                updateUrlWithTags(selectedTags); // <-- update URL here
                 return;
             }
             const tentative = new Set(selectedTags);
@@ -514,7 +455,6 @@ function buildTagFilterBar(allTags) {
                     Array.from(filter.children).forEach(ch => ch.classList.add("selected"));
                     firstTagClick = !!ENABLE_FIRST_TAG_CLICK;
                     rebuildCarousel();
-                    updateUrlWithTags(selectedTags);
                     return;
                 }
                 btn.classList.add("cannot-unselect");
@@ -525,7 +465,6 @@ function buildTagFilterBar(allTags) {
             if (!remaining.length) { btn.classList.add("cannot-unselect"); setTimeout(() => btn.classList.remove("cannot-unselect"), 700); return; }
             if (selectedTags.has(tag)) { selectedTags.delete(tag); btn.classList.remove("selected"); } else { selectedTags.add(tag); btn.classList.add("selected"); }
             rebuildCarousel();
-            updateUrlWithTags(selectedTags); // <-- and here
         };
 
         // ensure mouse clicks blur the button so :focus CSS doesn't keep text visible;
@@ -634,41 +573,11 @@ if (document.getElementById("carousel")) {
         portfolioItems = items;
         const allTags = new Set();
         items.forEach(it => it.tags.forEach(t => allTags.add(t)));
-
-        // read tags from url (obfuscated) and use them if valid
-        const urlTags = readTagsFromUrl().filter(t => allTags.has(t));
-
-        if (urlTags.length) selectedTags = new Set(urlTags);
-        else selectedTags = new Set([...allTags]);
-
-        // Adjust firstTagClick behavior now that selection can come from the URL:
-        // - enable special first-click narrowing if multiple tags selected
-        if (!ENABLE_FIRST_TAG_CLICK) firstTagClick = false;
-        else firstTagClick = (selectedTags.size !== 1);
-
+        selectedTags = new Set([...allTags]);
         buildTagFilterBar([...allTags]);
         buildCarousel(items);
-
-        // ensure the url reflects the initial selection (remove param if all selected)
-        updateUrlWithTags(selectedTags);
     });
 }
-
-// Run on DOM ready (handles first-load and navigations from history/bfcache)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPortfolioIfNeeded, { once: true });
-} else {
-    initPortfolioIfNeeded();
-}
-
-// ensure UI re-initializes when page is restored from bfcache (back/forward navigation)
-window.addEventListener('pageshow', (ev) => {
-    try {
-        // restore UI and re-run initialization (safe)
-        restoreUIState();
-        initPortfolioIfNeeded();
-    } catch (e) { /* ignore */ }
-});
 
 // small accessibility: mouse wheel rotates carousel
 document.addEventListener("wheel", e => {
@@ -817,47 +726,3 @@ async function setIconImgSources(img, name) {
         try { img.style.display = "none"; } catch {}
     }
 }
-
-// remove transient overlays used by page transitions / image zooms
-function removeTransientOverlays() {
-    try {
-        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
-            if (n && n.parentNode) n.parentNode.removeChild(n);
-        });
-    } catch (e) { /* ignore */ }
-}
-
-// restore inline styles that might keep the page hidden after navigation
-function restoreProjectUIState() {
-    try {
-        removeTransientOverlays();
-        const top = document.querySelector('.top-bar');
-        const bottom = document.querySelector('.bottom-bar');
-        if (top) { top.style.transition = ''; top.style.transform = ''; top.style.opacity = ''; }
-        if (bottom) { bottom.style.transition = ''; bottom.style.transform = ''; bottom.style.opacity = ''; }
-        const container = document.querySelector('.project-container');
-        if (container) { container.style.visibility = ''; container.style.opacity = ''; }
-        document.body.style.overflow = '';
-    } catch (e) { /* ignore */ }
-}
-
-function initProjectScript() {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', populateHeaderFromMeta, { once: true });
-    else populateHeaderFromMeta();
-    if (!ENABLE_PAGE_FADE) return;
-    const onReady = () => { 
-        // restore before attaching fades/handlers
-        restoreProjectUIState();
-        fadeInOnLoad(); 
-        setBackButtonImg();
-        attachBackFade(); 
-        attachImageOverlayHandlers(); 
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady, { once: true });
-    else onReady();
-}
-
-window.addEventListener('pageshow', () => {
-    // ensure UI chrome is visible when coming back from a project page
-    restoreProjectUIState();
-});
