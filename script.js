@@ -696,8 +696,8 @@ function initPortfolioIfNeeded() {
     const carouselEl = document.getElementById("carousel");
     if (!carouselEl) return;
 
-    // remove any stray overlays before we start initializing UI
-    removeTransientOverlays();
+    // remove overlays and restore UI chrome before init
+    restoreUIState();
 
     loadPortfolio().then(items => {
         portfolioItems = items;
@@ -773,9 +773,8 @@ if (document.readyState === 'loading') {
 // ensure UI re-initializes when page is restored from bfcache (back/forward navigation)
 window.addEventListener('pageshow', (ev) => {
     try {
-        // remove any overlays restored with the page
-        removeTransientOverlays();
-        // Re-run initialization logic which is safe (it will early-return if #carousel is missing)
+        // restore UI and re-run initialization (safe)
+        restoreUIState();
         initPortfolioIfNeeded();
     } catch (e) { /* ignore */ }
 });
@@ -937,13 +936,38 @@ function removeTransientOverlays() {
     } catch (e) { /* ignore */ }
 }
 
+// restore any inline transition/transform/opacity that may hide UI chrome after navigation
+function restoreUIState() {
+    try {
+        removeTransientOverlays();
+        // restore top/bottom bars
+        ['.top-bar', '.bottom-bar'].forEach(sel => {
+            const el = document.querySelector(sel);
+            if (el) {
+                el.style.transition = '';
+                el.style.transform = '';
+                el.style.opacity = '';
+            }
+        });
+        // restore carousel and its items
+        const carousel = document.getElementById('carousel');
+        if (carousel) {
+            carousel.style.pointerEvents = '';
+            carousel.style.visibility = '';
+            carousel.style.opacity = '';
+        }
+        // restore body overflow (in case overlays set it)
+        document.body.style.overflow = '';
+    } catch (e) { /* ignore */ }
+}
+
 // ---------- INIT ----------
 function initPortfolioIfNeeded() {
     const carouselEl = document.getElementById("carousel");
     if (!carouselEl) return;
 
-    // remove any stray overlays before we start initializing UI
-    removeTransientOverlays();
+    // remove overlays and restore UI chrome before init
+    restoreUIState();
 
     loadPortfolio().then(items => {
         portfolioItems = items;
@@ -952,13 +976,15 @@ function initPortfolioIfNeeded() {
         const allTagsSet = new Set();
         items.forEach(it => it.tags.forEach(t => allTagsSet.add(t)));
 
-        // create ordered tag list using window.TAG_ORDER preference (same logic as buildTagFilterBar)
+        // create ordered tag list using window.TAG_ORDER preference (same code as in buildTagFilterBar)
         const preferred = Array.isArray(window.TAG_ORDER) ? window.TAG_ORDER : [];
         const seen = new Set();
         const ordered = [];
+        // add preferred tags in order if they exist in allTags
         for (const t of preferred) {
             if (allTagsSet.has(t) && !seen.has(t)) { ordered.push(t); seen.add(t); }
         }
+        // append remaining tags in the provided order
         for (const t of allTagsSet) {
             if (!seen.has(t)) { ordered.push(t); seen.add(t); }
         }
@@ -1019,9 +1045,8 @@ if (document.readyState === 'loading') {
 // ensure UI re-initializes when page is restored from bfcache (back/forward navigation)
 window.addEventListener('pageshow', (ev) => {
     try {
-        // remove any overlays restored with the page
-        removeTransientOverlays();
-        // Re-run initialization logic which is safe (it will early-return if #carousel is missing)
+        // restore UI and re-run initialization (safe)
+        restoreUIState();
         initPortfolioIfNeeded();
     } catch (e) { /* ignore */ }
 });
@@ -1173,3 +1198,47 @@ async function setIconImgSources(img, name) {
         try { img.style.display = "none"; } catch {}
     }
 }
+
+// remove transient overlays used by page transitions / image zooms
+function removeTransientOverlays() {
+    try {
+        document.querySelectorAll('.page-fade-overlay, .image-overlay').forEach(n => {
+            if (n && n.parentNode) n.parentNode.removeChild(n);
+        });
+    } catch (e) { /* ignore */ }
+}
+
+// restore inline styles that might keep the page hidden after navigation
+function restoreProjectUIState() {
+    try {
+        removeTransientOverlays();
+        const top = document.querySelector('.top-bar');
+        const bottom = document.querySelector('.bottom-bar');
+        if (top) { top.style.transition = ''; top.style.transform = ''; top.style.opacity = ''; }
+        if (bottom) { bottom.style.transition = ''; bottom.style.transform = ''; bottom.style.opacity = ''; }
+        const container = document.querySelector('.project-container');
+        if (container) { container.style.visibility = ''; container.style.opacity = ''; }
+        document.body.style.overflow = '';
+    } catch (e) { /* ignore */ }
+}
+
+function initProjectScript() {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', populateHeaderFromMeta, { once: true });
+    else populateHeaderFromMeta();
+    if (!ENABLE_PAGE_FADE) return;
+    const onReady = () => { 
+        // restore before attaching fades/handlers
+        restoreProjectUIState();
+        fadeInOnLoad(); 
+        setBackButtonImg();
+        attachBackFade(); 
+        attachImageOverlayHandlers(); 
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady, { once: true });
+    else onReady();
+}
+
+window.addEventListener('pageshow', () => {
+    // ensure UI chrome is visible when coming back from a project page
+    restoreProjectUIState();
+});
