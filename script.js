@@ -54,16 +54,68 @@ function _xorBase64Decode(enc, key = 'ivb-2025') {
         return out;
     } catch (e) { return null; }
 }
+
+// Replace the previous encode/decode helpers with a compact bitmask ('b:') encoder.
+// Falls back to the older xor+base64 ('x:') when ALL_TAGS is not available.
 function encodeTagsToParam(tagArray) {
-    try { return _xorBase64Encode(JSON.stringify(Array.from(tagArray || []))); }
-    catch (e) { return ''; }
+    try {
+        const arr = Array.isArray(tagArray) ? tagArray : Array.from(tagArray || []);
+        // if we have an ALL_TAGS ordering, create a bitmask (compact, length ~ ceil(n/8))
+        if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
+            const n = ALL_TAGS.length;
+            const bytes = new Uint8Array(Math.ceil(n / 8));
+            for (const t of arr) {
+                const idx = ALL_TAGS.indexOf(t);
+                if (idx >= 0) bytes[Math.floor(idx / 8)] |= (1 << (idx % 8));
+            }
+            // bytes -> binary string -> btoa
+            let bin = "";
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return 'b:' + btoa(bin);
+        }
+        // fallback to legacy xor+base64 JSON
+        return 'x:' + _xorBase64Encode(JSON.stringify(arr));
+    } catch (e) {
+        return '';
+    }
 }
+
 function decodeTagsFromParam(param) {
     try {
-        const txt = _xorBase64Decode(param);
-        if (!txt) return [];
-        const arr = JSON.parse(txt);
-        return Array.isArray(arr) ? arr.map(String) : [];
+        if (!param) return [];
+        // bitmask format
+        if (param.startsWith('b:')) {
+            const b64 = param.slice(2);
+            let bin;
+            try { bin = atob(b64); } catch (e) { return []; }
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const out = [];
+            if (!Array.isArray(ALL_TAGS) || ALL_TAGS.length === 0) return [];
+            for (let i = 0; i < ALL_TAGS.length; i++) {
+                const byte = bytes[Math.floor(i / 8)] || 0;
+                const bit = (byte >> (i % 8)) & 1;
+                if (bit) out.push(ALL_TAGS[i]);
+            }
+            return out;
+        }
+        // legacy xor/json format
+        if (param.startsWith('x:')) {
+            const payload = param.slice(2);
+            const txt = _xorBase64Decode(payload);
+            if (!txt) return [];
+            const arr = JSON.parse(txt);
+            return Array.isArray(arr) ? arr.map(String) : [];
+        }
+        // unknown: try legacy xor decode for compatibility
+        const maybeTxt = _xorBase64Decode(param);
+        if (maybeTxt) {
+            try {
+                const arr = JSON.parse(maybeTxt);
+                if (Array.isArray(arr)) return arr.map(String);
+            } catch (e) { /* ignore */ }
+        }
+        return [];
     } catch (e) { return []; }
 }
 function updateUrlWithTags(tagsSet) {
@@ -637,19 +689,30 @@ function initPortfolioIfNeeded() {
         const allTags = new Set();
         items.forEach(it => it.tags.forEach(t => allTags.add(t)));
 
-        // read tags from url (obfuscated) and use them if valid
-        const urlTags = readTagsFromUrl().filter(t => allTags.has(t));
+        // create ordered tag list using window.TAG_ORDER preference
+        const preferred = Array.isArray(window.TAG_ORDER) ? window.TAG_ORDER : [];
+        const seen = new Set();
+        const ordered = [];
+        for (const t of preferred) {
+            if (allTags.has(t) && !seen.has(t)) { ordered.push(t); seen.add(t); }
+        }
+        for (const t of allTags) {
+            if (!seen.has(t)) { ordered.push(t); seen.add(t); }
+        }
 
+        // set global ALL_TAGS BEFORE decoding URL so bitmask decoding can map indices
+        ALL_TAGS = Array.from(ordered);
+
+        // now that ALL_TAGS exists, decode tags from the URL (if present)
+        const urlTags = readTagsFromUrl().filter(t => allTags.has(t));
         if (urlTags.length) selectedTags = new Set(urlTags);
-        else selectedTags = new Set([...allTags]);
+        else selectedTags = new Set([...ALL_TAGS]);
 
         // Adjust firstTagClick behavior now that selection can come from the URL:
-        // - enable special first-click narrowing when there are multiple selected tags
-        // - disable it when exactly one tag is already selected
         if (!ENABLE_FIRST_TAG_CLICK) firstTagClick = false;
         else firstTagClick = (selectedTags.size !== 1);
 
-        buildTagFilterBar([...allTags]);
+        buildTagFilterBar([...ALL_TAGS]);
         buildCarousel(items);
 
         // ensure the url reflects the initial selection (remove param if all selected)
