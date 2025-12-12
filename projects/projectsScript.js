@@ -3,9 +3,6 @@ const ENABLE_PAGE_FADE = true;
 const PROJECT_PAGE_FADE_DURATION_MS = 480;
 const PROJECT_PAGE_FADE_EASE = 'cubic-bezier(.4,.5,.8,1)';
 
-// convenience: repo folder used on GitHub Pages (adjust if your GH repo name changes)
-const REPO_PREFIX = '/Isaac_van_Beek';
-
 
 
 
@@ -45,59 +42,32 @@ async function setIconImgSources(img, name) {
             raw,
             raw.replace(/\//g,'_'),
             raw.replace(/\//g,''),            // remove slashes
-            raw.replace(/\s+/g,'_')           // spaces -> underscore
+            raw.replace(/\s+/g,'_')          // spaces -> underscore
         ].filter(Boolean);
 
-        // build filename variants
-        const filenameVariants = [];
-        for (const b of bases) {
-            filenameVariants.push(`${b}_Logo.png`);
-            filenameVariants.push(`${b}.png`);
-            filenameVariants.push(encodeURIComponent(`${b}_Logo.png`));
-            filenameVariants.push(encodeURIComponent(`${b}.png`));
-        }
-
-        // candidate path prefixes that cover both GH-Pages (repo prefix) and local / varied depths
-        const prefixes = [
-            `${REPO_PREFIX}/media/`,
-            `/media/`,
-            `media/`,
-            `./media/`,
-            `../media/`,
-            `../../media/`,
-            `../../../media/`
-        ];
-
-        // create candidates (preserve order), dedupe
-        const seen = new Set();
         const candidates = [];
-        for (const p of prefixes) {
-            for (const f of filenameVariants) {
-                const u = p + f;
-                if (!seen.has(u)) { seen.add(u); candidates.push(u); }
+        for (const b of bases) {
+            const variants = [`${b}_Logo.png`, `${b}.png`];
+            for (const v of variants) {
+                candidates.push(`/Isaac_van_Beek/media/${v}`);               // project pages are one level deeper -> ../media/
+                candidates.push(`/Isaac_van_Beek/media/${encodeURIComponent(v)}`);
             }
         }
 
-        // try HEAD first (less noisy), fall back to Image load if HEAD fails due to CORS/file
-        for (const url of candidates) {
+        // dedupe while preserving order
+        const seen = new Set();
+        const uniq = candidates.filter(u => (seen.has(u) ? false : (seen.add(u), true)));
+
+        for (const url of uniq) {
             try {
                 const res = await fetch(url, { method: 'HEAD' });
-                if (res && res.ok) { img.onerror = () => { img.style.display = "none"; }; img.src = url; return; }
-            } catch (e) {
-                try {
-                    // HEAD failed - try a quick Image load as fallback (some servers block HEAD)
-                    await new Promise((resolve, reject) => {
-                        const tester = new Image();
-                        tester.onload = () => resolve();
-                        tester.onerror = () => reject();
-                        tester.src = url;
-                    });
+                if (res && res.ok) {
                     img.onerror = () => { img.style.display = "none"; };
                     img.src = url;
                     return;
-                } catch (e2) {
-                    // continue to next candidate
                 }
+            } catch (e) {
+                // ignore and try next candidate
             }
         }
 
@@ -200,28 +170,12 @@ function attachBackFade() {
     backLink.addEventListener('click', ev => {
         ev.preventDefault();
         const href = backLink.getAttribute('href') || '/index.html';
-
-        // prefer going back in history (keeps original URL state intact).
-        // if no meaningful history exists -> fallback to href after animation.
         try {
             const overlay = makeOverlay(0);
             document.body.appendChild(overlay);
             requestAnimationFrame(() => overlay.style.opacity = '1');
-
-            if (window.history && window.history.length > 1) {
-                // navigate back after overlay animation
-                setTimeout(() => history.back(), PROJECT_PAGE_FADE_DURATION_MS + 20);
-                // safety fallback: if location doesn't change after some time, go to href
-                const start = location.href;
-                setTimeout(() => { if (location.href === start) window.location.href = href; }, PROJECT_PAGE_FADE_DURATION_MS + 1200);
-            } else {
-                // no history -> go to href
-                setTimeout(() => window.location.href = href, PROJECT_PAGE_FADE_DURATION_MS + 20);
-            }
-        } catch (e) {
-            // fallback straight navigation
-            window.location.href = href;
-        }
+            setTimeout(() => window.location.href = href, PROJECT_PAGE_FADE_DURATION_MS + 20);
+        } catch (e) { console.error(e); window.location.href = href; }
     }, { passive: false });
 }
 
