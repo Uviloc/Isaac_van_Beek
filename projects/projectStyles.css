@@ -44,6 +44,8 @@
   clear: both;
 }
 
+.project-date { color: #ffffff57; }
+
 /* base page layout */
 body {
   background: #222;

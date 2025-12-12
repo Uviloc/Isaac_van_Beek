@@ -42,15 +42,27 @@ async function setIconImgSources(img, name) {
             raw,
             raw.replace(/\//g,'_'),
             raw.replace(/\//g,''),            // remove slashes
-            raw.replace(/\s+/g,'_')          // spaces -> underscore
+            raw.replace(/\s+/g,'_')           // spaces -> underscore
         ].filter(Boolean);
 
+        // generate candidate urls that cover both GH-Pages hosting (repo prefix) and local/live-server roots.
         const candidates = [];
         for (const b of bases) {
             const variants = [`${b}_Logo.png`, `${b}.png`];
+
             for (const v of variants) {
-                candidates.push(`/Isaac_van_Beek/media/${v}`);               // project pages are one level deeper -> ../media/
-                candidates.push(`/Isaac_van_Beek/media/${encodeURIComponent(v)}`);
+                // absolute on GH Pages (repo in path) and absolute at site root
+                candidates.push(`${REPO_PREFIX}/media/${v}`);
+                candidates.push(`/media/${v}`);
+
+                // relative variants (useful from /projects/ pages and local servers)
+                candidates.push(`../media/${v}`);
+                candidates.push(`./media/${v}`);
+                candidates.push(`media/${v}`);
+
+                // encoded variant for safety
+                candidates.push(`${REPO_PREFIX}/media/${encodeURIComponent(v)}`);
+                candidates.push(`/media/${encodeURIComponent(v)}`);
             }
         }
 
@@ -60,6 +72,7 @@ async function setIconImgSources(img, name) {
 
         for (const url of uniq) {
             try {
+                // use HEAD when supported; if HEAD fails (CORS/file), try GET with small timeout
                 const res = await fetch(url, { method: 'HEAD' });
                 if (res && res.ok) {
                     img.onerror = () => { img.style.display = "none"; };
@@ -67,7 +80,17 @@ async function setIconImgSources(img, name) {
                     return;
                 }
             } catch (e) {
-                // ignore and try next candidate
+                // HEAD may fail due to CORS or file://; attempt a lightweight GET as fallback
+                try {
+                    const res2 = await fetch(url, { method: 'GET' });
+                    if (res2 && res2.ok) {
+                        img.onerror = () => { img.style.display = "none"; };
+                        img.src = url;
+                        return;
+                    }
+                } catch (e2) {
+                    // ignore and try next candidate
+                }
             }
         }
 
@@ -85,9 +108,27 @@ function populateHeaderFromMeta() {
     const color = getMeta('color');
     const description = getMeta('description');
     const tags = getMeta('tags');
+    const date = getMeta('date'); // <-- read date meta
     if (title) document.title = title;
     applyAccentColor(color);
     const titleEl = document.querySelector('.project-title'); if (titleEl && title) titleEl.textContent = title;
+
+    // ensure a project-date element exists under the title and set its text
+    try {
+        const header = document.querySelector('.project-header');
+        if (header && titleEl) {
+            let dateEl = header.querySelector('.project-date');
+            if (!dateEl) {
+                dateEl = document.createElement('div');
+                dateEl.className = 'project-date';
+                // insert right after the title so you can style it as needed
+                titleEl.insertAdjacentElement('afterend', dateEl);
+            }
+            if (date) { dateEl.textContent = date; dateEl.style.display = ''; }
+            else { dateEl.textContent = ''; dateEl.style.display = 'none'; }
+        }
+    } catch (e) { /* ignore insertion errors */ }
+
     const descEl = document.querySelector('.project-description');
     if (descEl) { if (description) { descEl.textContent = description; descEl.style.display = ''; } else descEl.style.display = 'none'; }
     const tagsContainer = document.querySelector('.project-tags');
@@ -152,12 +193,28 @@ function attachBackFade() {
     backLink.addEventListener('click', ev => {
         ev.preventDefault();
         const href = backLink.getAttribute('href') || '/index.html';
+
+        // prefer going back in history (keeps original URL state intact).
+        // if no meaningful history exists -> fallback to href after animation.
         try {
             const overlay = makeOverlay(0);
             document.body.appendChild(overlay);
             requestAnimationFrame(() => overlay.style.opacity = '1');
-            setTimeout(() => window.location.href = href, PROJECT_PAGE_FADE_DURATION_MS + 20);
-        } catch (e) { console.error(e); window.location.href = href; }
+
+            if (window.history && window.history.length > 1) {
+                // navigate back after overlay animation
+                setTimeout(() => history.back(), PROJECT_PAGE_FADE_DURATION_MS + 20);
+                // safety fallback: if location doesn't change after some time, go to href
+                const start = location.href;
+                setTimeout(() => { if (location.href === start) window.location.href = href; }, PROJECT_PAGE_FADE_DURATION_MS + 1200);
+            } else {
+                // no history -> go to href
+                setTimeout(() => window.location.href = href, PROJECT_PAGE_FADE_DURATION_MS + 20);
+            }
+        } catch (e) {
+            // fallback straight navigation
+            window.location.href = href;
+        }
     }, { passive: false });
 }
 

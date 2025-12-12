@@ -40,6 +40,117 @@ const TILT_SELECTOR = '.media';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+// simple obfuscation: XOR with key then base64 (kept for fallback / older links)
+function _xorBase64Encode(str, key = 'ivb-2025') {
+    const chars = [];
+    for (let i = 0; i < str.length; i++) chars.push(String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length)));
+    return btoa(chars.join(''));
+}
+function _xorBase64Decode(enc, key = 'ivb-2025') {
+    try {
+        const bin = atob(enc);
+        let out = '';
+        for (let i = 0; i < bin.length; i++) out += String.fromCharCode(bin.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        return out;
+    } catch (e) {
+        return null;
+    }
+}
+
+// encode tags into a compact param. Two formats supported:
+//  - 'b:' bitmask (preferred, compact and stable length per number of tags)
+//  - 'x:' xor+base64 JSON (fallback / legacy)
+function encodeTagsToParam(tagArray) {
+    try {
+        const arr = Array.isArray(tagArray) ? tagArray : Array.from(tagArray || []);
+        if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
+            const n = ALL_TAGS.length;
+            const bytes = new Uint8Array(Math.ceil(n / 8));
+            for (const t of arr) {
+                const idx = ALL_TAGS.indexOf(t);
+                if (idx >= 0) bytes[Math.floor(idx / 8)] |= (1 << (idx % 8));
+            }
+            // convert bytes -> binary string for btoa
+            let bin = "";
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return 'b:' + btoa(bin);
+        }
+        // fallback: xor+base64 JSON with explicit prefix
+        return 'x:' + _xorBase64Encode(JSON.stringify(arr));
+    } catch (e) { return ''; }
+}
+
+function decodeTagsFromParam(param) {
+    try {
+        if (!param) return [];
+        // prefixed bitmask
+        if (param.startsWith('b:')) {
+            const b64 = param.slice(2);
+            let bin;
+            try { bin = atob(b64); } catch (e) { return []; }
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const out = [];
+            if (!Array.isArray(ALL_TAGS) || ALL_TAGS.length === 0) return [];
+            for (let i = 0; i < ALL_TAGS.length; i++) {
+                const byte = bytes[Math.floor(i / 8)] || 0;
+                const bit = (byte >> (i % 8)) & 1;
+                if (bit) out.push(ALL_TAGS[i]);
+            }
+            return out;
+        }
+        // prefixed xor/json (legacy)
+        if (param.startsWith('x:')) {
+            const payload = param.slice(2);
+            const txt = _xorBase64Decode(payload);
+            if (!txt) return [];
+            const arr = JSON.parse(txt);
+            return Array.isArray(arr) ? arr.map(String) : [];
+        }
+        // unknown format: try legacy xor decode first (backwards compat)
+        const maybeTxt = _xorBase64Decode(param);
+        if (maybeTxt) {
+            try {
+                const arr = JSON.parse(maybeTxt);
+                if (Array.isArray(arr)) return arr.map(String);
+            } catch (e) { /* ignore */ }
+        }
+        return [];
+    } catch (e) { return []; }
+}
+
+function updateUrlWithTags(tagsSet) {
+    try {
+        const url = new URL(window.location.href);
+        const arr = Array.from(tagsSet || []);
+        // if ALL_TAGS defined and selection equals all tags, remove param (default state)
+        if (Array.isArray(ALL_TAGS) && ALL_TAGS.length > 0) {
+            const allSelected = (arr.length === ALL_TAGS.length) && ALL_TAGS.every(t => tagsSet.has(t));
+            if (allSelected) {
+                url.searchParams.delete('t');
+                history.replaceState(null, '', url.toString());
+                return;
+            }
+        } else {
+            // if no ALL_TAGS context and no tags selected, remove param
+            if (!arr.length) { url.searchParams.delete('t'); history.replaceState(null, '', url.toString()); return; }
+        }
+        const encoded = encodeTagsToParam(arr);
+        if (!encoded) url.searchParams.delete('t');
+        else url.searchParams.set('t', encoded);
+        history.replaceState(null, '', url.toString());
+    } catch (e) { /* ignore */ }
+}
+
+function readTagsFromUrl() {
+    try {
+        const url = new URL(window.location.href);
+        const p = url.searchParams.get('t');
+        if (!p) return [];
+        return decodeTagsFromParam(p);
+    } catch (e) { return []; }
+}
+
 // convert plain text to safe HTML preserving line breaks from meta descriptions
 function escapeHtml(str) {
     return String(str || '')
@@ -77,6 +188,7 @@ async function loadPortfolio() {
             description: nl2brFromMeta(rawDesc), // HTML-safe with <br> for display
             thumbnail: meta("thumbnail") || "",
             color: meta("color") || "",
+            date: meta("date") || "",                     // <-- added date field
             tags: (meta("tags") || "").split(",").map(t => t.trim()).filter(Boolean)
         });
     }
@@ -131,10 +243,13 @@ async function processMoveQueue() {
 function formatColorForRadial(color) {
     if (!color) return "";
     const v = String(color).trim().replace(/\s*;$/,'');
+
     // if it's already a gradient (radial or linear) return as-is
     if (/^\s*(radial-gradient|linear-gradient)\s*\(/i.test(v)) return v;
+
     // multiple comma separated values -> use them as stops inside a radial gradient
     if (v.includes(',')) return `radial-gradient(circle at 50% 10%, ${v})`;
+
     // single color -> create a gentle radial using the color and a faint outer fade
     return `radial-gradient(${v}, rgb(0,0,0))`;
 }
@@ -189,10 +304,15 @@ function createCarouselElement(item, idx) {
     }).join("");
 
     el.innerHTML = `
-        <h2>${item.title}</h2>
-        <div class="item-tags">${tagsHtml}</div>
-        <img class="media" src="${item.thumbnail}" alt="${item.title} thumbnail">
-        <p>${item.description}</p>
+        <div class:"item-section">
+            <h2>${item.title}</h2>
+            <div class="item-tags">${tagsHtml}</div>
+        </div>
+        <div class:"item-section">
+            <img class="media" src="${item.thumbnail}" alt="${item.title} thumbnail">
+            <p class="item-description">${item.description}</p>
+        </div>
+        <p class="item-date">${escapeHtml(item.date || "")}</p>
     `;
 
     // after insertion, set up icons properly (so onerror fallback works)
@@ -445,6 +565,7 @@ function buildTagFilterBar(allTags) {
                 Array.from(filter.children).forEach(ch => ch.dataset && ch.dataset.tag === tag ? ch.classList.add("selected") : ch.classList.remove("selected"));
                 firstTagClick = false;
                 rebuildCarousel();
+                updateUrlWithTags(selectedTags); // update URL
                 return;
             }
             const tentative = new Set(selectedTags);
@@ -455,6 +576,7 @@ function buildTagFilterBar(allTags) {
                     Array.from(filter.children).forEach(ch => ch.classList.add("selected"));
                     firstTagClick = !!ENABLE_FIRST_TAG_CLICK;
                     rebuildCarousel();
+                    updateUrlWithTags(selectedTags);
                     return;
                 }
                 btn.classList.add("cannot-unselect");
@@ -465,6 +587,7 @@ function buildTagFilterBar(allTags) {
             if (!remaining.length) { btn.classList.add("cannot-unselect"); setTimeout(() => btn.classList.remove("cannot-unselect"), 700); return; }
             if (selectedTags.has(tag)) { selectedTags.delete(tag); btn.classList.remove("selected"); } else { selectedTags.add(tag); btn.classList.add("selected"); }
             rebuildCarousel();
+            updateUrlWithTags(selectedTags); // update URL after change
         };
 
         // ensure mouse clicks blur the button so :focus CSS doesn't keep text visible;
@@ -571,11 +694,53 @@ if (ENABLE_PAGE_FADE) {
 if (document.getElementById("carousel")) {
     loadPortfolio().then(items => {
         portfolioItems = items;
-        const allTags = new Set();
-        items.forEach(it => it.tags.forEach(t => allTags.add(t)));
-        selectedTags = new Set([...allTags]);
-        buildTagFilterBar([...allTags]);
+
+        // gather tags from items
+        const allTagsSet = new Set();
+        items.forEach(it => it.tags.forEach(t => allTagsSet.add(t)));
+
+        // create ordered tag list using window.TAG_ORDER preference (same logic as buildTagFilterBar)
+        const preferred = Array.isArray(window.TAG_ORDER) ? window.TAG_ORDER : [];
+        const seen = new Set();
+        const ordered = [];
+        for (const t of preferred) {
+            if (allTagsSet.has(t) && !seen.has(t)) { ordered.push(t); seen.add(t); }
+        }
+        for (const t of allTagsSet) {
+            if (!seen.has(t)) { ordered.push(t); seen.add(t); }
+        }
+
+        // set global ALL_TAGS BEFORE decoding URL so bitmask decoding can map indices
+        ALL_TAGS = Array.from(ordered);
+
+        // read tags from url (obfuscated / compact) and use them if valid
+        const urlTags = readTagsFromUrl().filter(t => allTagsSet.has(t));
+        if (urlTags.length) selectedTags = new Set(urlTags);
+        else selectedTags = new Set([...ALL_TAGS]);
+
+        // Adjust firstTagClick behavior now that selection can come from the URL:
+        // - keep the "first-click narrows to single tag" behaviour active when there are multiple
+        //   tags selected (including the default "all tags" state).
+        // - disable the special first-click behaviour when exactly one tag is already selected
+        //   (so clicks act as normal toggles).
+        // - respect the global ENABLE_FIRST_TAG_CLICK toggle.
+        if (!ENABLE_FIRST_TAG_CLICK) {
+            firstTagClick = false;
+        } else {
+            firstTagClick = (selectedTags.size !== 1);
+        }
+
+        buildTagFilterBar([...ALL_TAGS]);
         buildCarousel(items);
+
+        // apply filtering to carousel based on selectedTags (ensures URL-loaded selections actually filter)
+        // only run rebuild if not all tags are selected (no-op otherwise)
+        if (!(selectedTags.size === ALL_TAGS.length && ALL_TAGS.every(t => selectedTags.has(t)))) {
+            rebuildCarousel();
+        }
+
+        // ensure the url reflects the initial selection (helpful when defaulted)
+        updateUrlWithTags(selectedTags);
     });
 }
 
