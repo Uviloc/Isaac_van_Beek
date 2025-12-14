@@ -123,7 +123,7 @@ body {
     justify-content: center;
     align-items: center;
     width: auto;
-    width: 25%;
+    width: 27%;
 }
 
 
@@ -411,7 +411,7 @@ body.page-exit .bottom-bar {
 .tag-button:focus .tag-icon,
 .item-tag:hover .tag-icon,
 .item-tag:focus .tag-icon {
-    opacity: 0.8;                       /* reduced opacity */
+    opacity: 0.5;                       /* reduced opacity */
     filter: blur(2px) saturate(.1);    /* blur + slightly desaturate */
     transform: translate(-50%, -50%) scale(.98);
     transition: opacity .18s ease, filter .18s ease, transform .18s ease;

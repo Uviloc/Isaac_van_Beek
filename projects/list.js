@@ -1,5 +1,6 @@
 // List of all project HTML files
 window.PROJECT_FILES = [
+    "Pixel_Art/project.html",
     "Ontwaken_van_het_Stille_Woud/project.html",
     "Into_The_Depth/project.html",
     "Glow/project.html",
@@ -17,6 +18,7 @@ window.TAG_ORDER = [
     "Level Design",
     "Writing",
     "Substance Designer",
+    "Pixel Art",
     "Unity",
     "Unreal",
     "WinForms",
