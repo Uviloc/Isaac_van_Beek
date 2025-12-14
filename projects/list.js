@@ -1,13 +1,13 @@
 // List of all project HTML files
 window.PROJECT_FILES = [
-    "Pixel_Art/project.html",
-    "Ontwaken_van_het_Stille_Woud/project.html",
-    "Into_The_Depth/project.html",
-    "Glow/project.html",
-    "Wave_Function_Collapse/project.html",
-    "Witchraft/project.html",
-    "Procedural_Road_Gen/project.html",
-    "Allus_Internship/project.html"
+    "Pixel_Art/project.html",                       //pos 0
+    "Ontwaken_van_het_Stille_Woud/project.html",    //pos +1
+    "Into_The_Depth/project.html",                  //pos +2
+    "Glow/project.html",                            //hidden
+    "Wave_Function_Collapse/project.html",          //hidden
+    "Witchraft/project.html",                       //hidden
+    "Procedural_Road_Gen/project.html",             //pos -2
+    "Allus_Internship/project.html"                 //pos -1
 ];
 
 
