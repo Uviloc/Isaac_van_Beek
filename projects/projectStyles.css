@@ -236,7 +236,7 @@ body {
   height: 70vh;
   width: 45vw;
   rotate: calc(var(--angle) * -1);
-  background: #3d1e3c;
+  background-image: radial-gradient(#3d3d3d, #2b2b2b);
   border-radius: 18px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);
   margin: 0 auto;
