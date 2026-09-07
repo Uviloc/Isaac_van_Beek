@@ -1,6 +1,6 @@
 // List of all project HTML files
 window.PROJECT_FILES = [
-    //"BoekenGilde_Internship/project.html",          //pos 0
+    "BoekenGilde_Internship/project.html",          //pos 0
     "Pixel_Art/project.html",                       //pos +1
     "Ontwaken_van_het_Stille_Woud/project.html",    //pos +2
     "Into_The_Depth/project.html",                  //hidden
